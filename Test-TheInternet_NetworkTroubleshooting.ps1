@@ -21,23 +21,21 @@ begin{
 
   Function Get-MyNicStatus 
   {
-    for($i = 0; $i -lt $MyNetAdapter.Length; $i++)
-    {
-      $NicName = $MyNetAdapter[$i].Name
-      Write-Host ('NIC "{0}" is currently: ' -f $NicName) -NoNewline      
-      if(($MyNetAdapter[$i].AdminStatus) -eq 'up')
+    Get-NetAdapter | ForEach-Object -Process {
+      Write-Host ('{0} adapter status is: ' -f $_.name) -NoNewline
+      if($_.status -ne 'Up')
       {
-        Write-Host ($MyNetAdapter[$i].AdminStatus) -ForegroundColor Green
+        Write-Host $_.status -ForegroundColor Red
       }
-      else
+      Else
       {
-        Write-Host ($MyNetAdapter[$i].AdminStatus) -NoNewline -ForegroundColor Red
-        Write-Host (' (This has been Disabled)') -ForegroundColor Yellow
+        Write-Host $_.status -ForegroundColor Green
+        #Get-NetAdapterStatistics -Name $_.Name
       }
     }
   }
 
-
+  Get-MyNicStatus #For Testing
   function Test-MyGateway 
   {
     for($i = 0; $i -lt $MyNetAdapter.Length; $i++)
@@ -48,7 +46,7 @@ begin{
       {
         $GatewayPresent = Test-Connection -ComputerName $MyGateway.NextHop -Count 1 -BufferSize 1000 -Quiet
             
-        Write-Host ('NIC "{0}" can connect to {1}: ' -f $NicName, ($MyGateway.NextHop)) -NoNewline -ForegroundColor cyan
+        Write-Host ('NIC "{0}" can connect to the Gateway {1}: ' -f $NicName, ($MyGateway.NextHop)) -NoNewline -ForegroundColor cyan
          
         if ($GatewayPresent -eq $true)
         {
@@ -73,14 +71,14 @@ begin{
     Param()
   
     Begin{
-      Log-Write -LogPath $IpLogFile -LineValue 'Getting the local IP, NIC and Subnet'
+
       $testBytes = $null
     }
   
     Process{
       Try
       {            
-        $AllNetworkAdaptors = Get-NetAdapter | Where-Object -Property Status -EQ -Value Up
+        $AllNetworkAdaptors = Get-NetAdapter | Where-Object -Property Status -EQ -Value Up 
         if($AllNetworkAdaptors.count -ge 1)
         {
           foreach($CurrentAdaptor in $AllNetworkAdaptors)
@@ -99,30 +97,28 @@ begin{
     
       Catch
       {
-        Log-Error -LogPath $IpLogFile -ErrorDesc $_.Exception -ExitGracefully $true
-        Break
+
       }
     }
   
     End{
-      If($?)
-      {
-        Log-Write -LogPath $IpLogFile -LineValue 'Completed Successfully.'
-        Log-Write -LogPath $IpLogFile -LineValue ' '
-      }
+
     }
   }
 
-  $MyGateway = Get-NetRoute | Get-MyGateway
-  $MyNetAdapter = Get-NetAdapter
+  #$MyGateway = Get-NetRoute | Get-MyGateway
+  #$MyNetAdapter = Get-NetAdapter
+  $OutputFileName = "c:\temp\SelfHelp-$(get-date -Format mmss).txt"
 }
 
 process{
   Clear-Host
-  Start-Transcript
+  Start-Transcript -Path $OutputFileName
   Get-MyNicStatus
   Write-Host ('The IP Address: {0}' -f (Get-MyActiveIpAddress))
   Test-MyGateway
+  Stop-Transcript
+  Start-Process notepad.exe $OutputFileName
 }
 
 end{}
