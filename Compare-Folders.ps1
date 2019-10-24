@@ -1,22 +1,7 @@
-﻿#Requires -version 5.0
-#quires -RunAsAdministrator
-
-<#
-    .Synopsis
-    Short description
-    .DESCRIPTION
-    Long description
-    .EXAMPLE
-    Example of how to use this cmdlet
-    .EXAMPLE
-    Another example of how to use this cmdlet
-#>
-
+﻿
 
 $FolderSource = "$env:USERPROFILE\Documents\GitHub\OgJAkFy8\ITPS-Tools\" 
 $FolderDest = "$env:USERPROFILE\Documents\GitHub\PS-Scripts\"
-#$FolderSource = '\\rsrcngmfs02\OMC-CA_Org\OMC-S\IT' 
-#$FolderDest = '\\rsrcnfs08\OMC-CA_Org\OMC-S\IT'
 
    
 function Compare-Folders 
