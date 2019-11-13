@@ -150,7 +150,7 @@ do
   $i++
   $IpAddressToTest
 } 
-while ($i -lt ([int]$t[3]+16)) 
+while ($i -lt ([int]$t[3]+2)) 
 
 
 $GoodHostIpAddress = '70.160.25.172'
@@ -175,5 +175,7 @@ $masklength = (Get-NetIPAddress -InterfaceIndex 9 | Where-Object -Property Addre
 $ip.Address = ([uint32]::MaxValue -1)-shl (32 -$masklength) -shr (32 - $masklength)
 
 
-
+Get-NetIPAddress -PrefixOrigin Dhcp |
+select InterfaceAlias, IPAddress,ValidLifetime,
+@{l="DHCP Expiration";e={(Get-Date).addticks($_.ValidLifetime.ticks)}} | ft
 
