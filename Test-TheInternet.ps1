@@ -23,7 +23,8 @@ BEGIN{
         Write-Host -Object ('Testing {0}:' -f $TestName) -ForegroundColor Yellow
         Write-Verbose -Message $Target 
       
-        $TestResults = (Test-NetConnection -ComputerName $Target ).PingSucceeded
+        $PingSucceeded = (Test-NetConnection -ComputerName $Target ).PingSucceeded
+        if($PingSucceeded -eq $true){$TestResults = 'Passed'}elseif($PingSucceeded -eq $false){$TestResults = "Failed"}
         Write-Output -InputObject ($Formatting -f $Target, $Delimeter, $TestResults)
         ($Formatting -f $TestName, $Delimeter, $TestResults) | Out-File -FilePath $NetworkReportFullName -Append
       }
