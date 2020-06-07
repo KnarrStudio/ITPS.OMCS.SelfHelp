@@ -18,9 +18,10 @@ BEGIN{
           
     try
     {
+      Write-Host -Object ('Testing {0}:' -f $TestName) -ForegroundColor Yellow
+        
       ForEach($Target in $TargetNameIp) 
       { 
-        Write-Host -Object ('Testing {0}:' -f $TestName) -ForegroundColor Yellow
         Write-Verbose -Message $Target 
       
         $PingSucceeded = (Test-NetConnection -ComputerName $Target ).PingSucceeded
