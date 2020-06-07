@@ -39,18 +39,21 @@ BEGIN{
     param
     (
       [Parameter(Position = 0)]
-      [string]$URL = 'http://ipinfo.io/json'
+      [string]$URL = 'http://checkip.dyndns.org/'
     )
   
     $Delimeter = ':'
     $Formatting = '{0,-23}{1,-2}{2,-24}'
   
-    $ExternalIp = Invoke-RestMethod -Uri $URL | Select-Object -ExpandProperty ip
+    $HtmlData = (Invoke-RestMethod -Uri $URL).html.body
+    $HtmlString = [string]$HtmlData.Replace(" ","")
+    $ExternalIp = ($HtmlString.Split(':'))[1]
     $NICinfo.ExternalIp = $ExternalIp
-  
+    
     Write-Verbose -Message ('This is the IP address you are presenting to the internet')
     Write-Output -InputObject ($Formatting -f 'External IP', $Delimeter, $ExternalIp)
   }
+  
   function Get-NICinformation
   {
     param
