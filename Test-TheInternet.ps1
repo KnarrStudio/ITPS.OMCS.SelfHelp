@@ -25,15 +25,13 @@ BEGIN{
         Write-Verbose -Message $Target 
       
         $PingSucceeded = (Test-NetConnection -ComputerName $Target ).PingSucceeded
-        if($PingSucceeded -eq $true){$TestResults = 'Passed'}elseif($PingSucceeded -eq $false){$TestResults = "Failed"}
+        if($PingSucceeded -eq $true){$TestResults = 'Passed'}elseif($PingSucceeded -eq $false){$TestResults = 'Failed'}
         Write-Output -InputObject ($Formatting -f $Target, $Delimeter, $TestResults)
         ($Formatting -f $TestName, $Delimeter, $TestResults) | Out-File -FilePath $NetworkReportFullName -Append
       }
     }
     Catch
-    {
-      Write-Output -InputObject ('{0} Failed' -f $TestName)
-    }
+    {Write-Output -InputObject ('{0} Failed' -f $TestName)}
   }
   function Get-WebFacingIPAddress
   {
@@ -47,7 +45,7 @@ BEGIN{
     $Formatting = '{0,-23}{1,-2}{2,-24}'
   
     $HtmlData = (Invoke-RestMethod -Uri $URL).html.body
-    $HtmlString = [string]$HtmlData.Replace(" ","")
+    $HtmlString = [string]$HtmlData.Replace(' ','')
     $ExternalIp = ($HtmlString.Split(':'))[1]
     $NICinfo.ExternalIp = $ExternalIp
     
@@ -64,12 +62,14 @@ BEGIN{
       $Workstation = $env:COMPUTERNAME
     )
     
-    $AllNetworkAdaptors = Get-WmiObject -Class Win32_NetworkAdapterConfiguration -Filter IPEnabled=TRUE -ComputerName $Workstation -ErrorAction Stop | Select-Object -Property * -ExcludeProperty IPX*, WINS*
+    $NicServiceName = (get-wmiobject win32_networkadapter -filter 'netconnectionstatus = 2').ServiceName # | select -Property *
+    $AllNetworkAdaptors = Get-WmiObject -Class Win32_NetworkAdapterConfiguration | Select-Object -Property * # -Filter ServiceName=$ServiceName #IPEnabled=TRUE -ComputerName $Workstation -ErrorAction Stop | Select-Object -Property * -ExcludeProperty IPX*, WINS*
+    #$AllNetworkAdaptors = Get-WmiObject -Class Win32_NetworkAdapterConfiguration -Filter IPEnabled=TRUE -ComputerName $Workstation -ErrorAction Stop | Select-Object -Property * -ExcludeProperty IPX*, WINS*
     #$AllNetworkAdaptors = Get-NetAdapter | select -Property * | Where-Object {(($_.Status -EQ 'Up' ) -and ($_.ComponentID -match 'PCI'))} 
   
     foreach($NIC in $AllNetworkAdaptors)
     {
-      if($NIC.index -eq 14) 
+      if($NIC.ServiceName -eq $NicServiceName) 
       {
         $NICinfo.DNSHostName          = $NIC.DNSHostName
         $NICinfo.IPAddress            = $NIC.IPAddress[0]
@@ -134,17 +134,14 @@ PROCESS{
   Write-Host -Object ('Finding the Web facing IP Address') -ForegroundColor Yellow
   Get-WebFacingIPAddress
 
-  
   Test-NetworkConnection
   Test-NetworkConnection -TestName 'IPAddress' -TargetNameIp $NICinfo['IPAddress'] 
   Test-NetworkConnection -TestName 'DefaultIPGateway' -TargetNameIp $NICinfo['DefaultIPGateway'] 
   Test-NetworkConnection -TestName 'DNSServerSearchOrder' -TargetNameIp $($NICinfo.DNSServerSearchOrder) 
   if($NICinfo.DHCPServer -ne 'False')
-  {
-    Test-NetworkConnection -TestName 'DHCPServer' -TargetNameIp $NICinfo.DHCPServer
-  }
+  {Test-NetworkConnection -TestName 'DHCPServer' -TargetNameIp $NICinfo.DHCPServer}
   Test-NetworkConnection -TestName 'ExternalIp' -TargetNameIp $NICinfo['ExternalIp'] 
-  
+
 }
 
 END{
