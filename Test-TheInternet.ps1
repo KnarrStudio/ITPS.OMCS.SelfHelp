@@ -61,7 +61,7 @@ BEGIN{
     (
       [Parameter(Position = 0)]
       [String]
-      $Workstation = 'LocalHost'
+      $Workstation = $env:COMPUTERNAME
     )
     
     $AllNetworkAdaptors = Get-WmiObject -Class Win32_NetworkAdapterConfiguration -Filter IPEnabled=TRUE -ComputerName $Workstation -ErrorAction Stop | Select-Object -Property * -ExcludeProperty IPX*, WINS*
@@ -69,7 +69,7 @@ BEGIN{
   
     foreach($NIC in $AllNetworkAdaptors)
     {
-      if($NIC.index -eq 1) 
+      if($NIC.index -eq 14) 
       {
         $NICinfo.DNSHostName          = $NIC.DNSHostName
         $NICinfo.IPAddress            = $NIC.IPAddress[0]
@@ -97,7 +97,7 @@ BEGIN{
   $NetworkReportPath = "$env:HOMEDRIVE\temp"
   $NetworkReportName = ('{0}-{1}.txt' -f $userName, $DateStamp)
   $NetworkReportFullName = ('{0}\{1}' -f $NetworkReportPath, $NetworkReportName)
-  New-Item -Path $NetworkReportFullName -ItemType File
+  $Null = New-Item -Path $NetworkReportFullName -ItemType File
   
   $TempFile = New-TemporaryFile 
       
