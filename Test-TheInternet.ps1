@@ -1,4 +1,4 @@
-﻿#requires -Version 3.0 -Modules Microsoft.PowerShell.Utility, NetTCPIP
+#requires -Version 3.0 -Modules Microsoft.PowerShell.Utility, NetTCPIP
 
 BEGIN{
   function Test-NetworkConnection
@@ -25,28 +25,57 @@ BEGIN{
         Write-Verbose -Message $Target 
       
         $PingSucceeded = (Test-NetConnection -ComputerName $Target ).PingSucceeded
-        if($PingSucceeded -eq $true){$TestResults = 'Passed'}elseif($PingSucceeded -eq $false){$TestResults = 'Failed'}
+        if($PingSucceeded -eq $true)
+        {
+          $TestResults = 'Passed'
+        }
+        elseif($PingSucceeded -eq $false)
+        {
+          $TestResults = 'Failed'
+        }
         Write-Output -InputObject ($Formatting -f $Target, $Delimeter, $TestResults)
         ($Formatting -f $TestName, $Delimeter, $TestResults) | Out-File -FilePath $NetworkReportFullName -Append
       }
     }
     Catch
-    {Write-Output -InputObject ('{0} Failed' -f $TestName)}
+    {
+      Write-Output -InputObject ('{0} Failed' -f $TestName)
+    }
   }
   function Get-WebFacingIPAddress
   {
     param
     (
       [Parameter(Position = 0)]
-      [string]$URL = 'http://checkip.dyndns.org/'
+      [String]$URL = 'http://checkip.dyndns.org/',
+      [Parameter(Mandatory=$true,Position = 1)]
+      [String]$IpAddress
     )
   
     $Delimeter = ':'
     $Formatting = '{0,-23}{1,-2}{2,-24}'
   
-    $HtmlData = (Invoke-RestMethod -Uri $URL).html.body
-    $HtmlString = [string]$HtmlData.Replace(' ','')
-    $ExternalIp = ($HtmlString.Split(':'))[1]
+    $PrivateArray = @('192.', '10.', '127.')
+    $PrivateIp = ($PrivateArray | ForEach-Object -Process {
+        if($IpAddress.Contains($_))
+        {
+          $true
+        }
+    })
+    
+    Write-Verbose -Message ('Ip Address {0}' -f $IpAddress)
+    
+    if($PrivateIp)
+    {
+      $HtmlData = (Invoke-RestMethod -Uri $URL).html.body
+      $HtmlString = [string]$HtmlData.Replace(' ','')
+      $ExternalIp = ($HtmlString.Split(':'))[1]
+    }
+    else
+    {
+      $ExternalIp = $IpAddress
+    }
+
     $NICinfo.ExternalIp = $ExternalIp
     
     Write-Verbose -Message ('This is the IP address you are presenting to the internet')
@@ -62,7 +91,7 @@ BEGIN{
       $Workstation = $env:COMPUTERNAME
     )
     
-    $NicServiceName = (get-wmiobject win32_networkadapter -filter 'netconnectionstatus = 2').ServiceName # | select -Property *
+    $NicServiceName = (Get-WmiObject -Class win32_networkadapter -Filter 'netconnectionstatus = 2').ServiceName # | select -Property *
     $AllNetworkAdaptors = Get-WmiObject -Class Win32_NetworkAdapterConfiguration | Select-Object -Property * # -Filter ServiceName=$ServiceName #IPEnabled=TRUE -ComputerName $Workstation -ErrorAction Stop | Select-Object -Property * -ExcludeProperty IPX*, WINS*
     #$AllNetworkAdaptors = Get-WmiObject -Class Win32_NetworkAdapterConfiguration -Filter IPEnabled=TRUE -ComputerName $Workstation -ErrorAction Stop | Select-Object -Property * -ExcludeProperty IPX*, WINS*
     #$AllNetworkAdaptors = Get-NetAdapter | select -Property * | Where-Object {(($_.Status -EQ 'Up' ) -and ($_.ComponentID -match 'PCI'))} 
@@ -81,11 +110,11 @@ BEGIN{
 
         if($NIC.DHCPEnabled) 
         {
-          $NICinfo.DHCPServer           = $NIC.DHCPServer
+          $NICinfo.DHCPServer         = $NIC.DHCPServer
         }
         Else
         {
-          $NICinfo.DHCPServer           = 'False'
+          $NICinfo.DHCPServer         = 'False'
         }
       }
     }
@@ -132,14 +161,16 @@ PROCESS{
   Write-Output -InputObject ($Formatting -f 'MACAddress', $Delimeter, $NICinfo.MACAddress)
   
   Write-Host -Object ('Finding the Web facing IP Address') -ForegroundColor Yellow
-  Get-WebFacingIPAddress
+  Get-WebFacingIPAddress -IpAddress $($NICinfo.IPAddress)
 
   Test-NetworkConnection
   Test-NetworkConnection -TestName 'IPAddress' -TargetNameIp $NICinfo['IPAddress'] 
   Test-NetworkConnection -TestName 'DefaultIPGateway' -TargetNameIp $NICinfo['DefaultIPGateway'] 
   Test-NetworkConnection -TestName 'DNSServerSearchOrder' -TargetNameIp $($NICinfo.DNSServerSearchOrder) 
   if($NICinfo.DHCPServer -ne 'False')
-  {Test-NetworkConnection -TestName 'DHCPServer' -TargetNameIp $NICinfo.DHCPServer}
+  {
+    Test-NetworkConnection -TestName 'DHCPServer' -TargetNameIp $NICinfo.DHCPServer
+  }
   Test-NetworkConnection -TestName 'ExternalIp' -TargetNameIp $NICinfo['ExternalIp'] 
 
 }
