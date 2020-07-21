@@ -122,6 +122,7 @@ BEGIN{
 
   $userName = $env:USERNAME
   $DateStamp = Get-Date -Format yyMMddTHHmmss
+  
   $NetworkReportPath = "$env:TEMP"
   $NetworkReportName = ('{0}-{1}.txt' -f $userName, $DateStamp)
   $NetworkReportFullName = ('{0}\{1}' -f $NetworkReportPath, $NetworkReportName)
