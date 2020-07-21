@@ -123,7 +123,7 @@ BEGIN{
   $userName = $env:USERNAME
   $DateStamp = Get-Date -Format yyMMddTHHmmss
 
-  $NetworkReportPath = "$env:TEMP"
+  $NetworkReportPath = "$env:HOMEDRIVE\temp"
   $NetworkReportName = ('{0}-{1}.txt' -f $userName, $DateStamp)
   $NetworkReportFullName = ('{0}\{1}' -f $NetworkReportPath, $NetworkReportName)
   $Null = New-Item -Path $NetworkReportFullName -ItemType File
