@@ -12,9 +12,9 @@ DNSServerSearchOrder   : 192.168.1.3, 9.9.9.9
 DHCPEnabled            : 192.168.1.1             
 IPSubnet               : 255.255.255.0           
 Description of NIC     : Intel(R) Wireless-N  
-MACAddress             : AC:7B:A1:C1:56:77      
+MACAddress             : 00:0B:01:C1:56:77      
 **Finding the Web facing IP Address** 
-External IP            : 128.117.109.252            
+External IP            : 18.117.109.252            
 **Testing Loopback connection:** 
 127.0.0.1              : Passed                  
 **Testing IPAddress:**  
@@ -28,5 +28,5 @@ _WARNING: Ping to 192.168.1.3 failed with status: DestinationHostUnreachable_
 **Testing DHCPServer:**
 192.168.1.1            : Passed                  
 **Testing ExternalIp:**  
-8.17.109.252           : Passed                    
+18.117.109.252         : Passed                    
 Find the report: C:\temp\Username-200721T070003.txt  
