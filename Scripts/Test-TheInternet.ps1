@@ -77,9 +77,9 @@ BEGIN{
       [String]
       $Workstation = $env:COMPUTERNAME
     )
-    $NicServiceName = (Get-WmiObject -Class win32_networkadapter -Filter 'netconnectionstatus = 2').ServiceName # | select -Property *
+    $NicServiceName = (Get-WmiObject -Class win32_networkadapter -Filter 'netconnectionstatus = 2').ServiceName | Where-Object { $_ -ne 'VMnetAdapter' }#select -Property *
 #    $AllNetworkAdaptors = Get-WmiObject -Class Win32_NetworkAdapterConfiguration | where ServiceName -eq $NicServiceName | Select-Object -Property *  #IPEnabled=TRUE -ComputerName $Workstation -ErrorAction Stop | Select-Object -Property * -ExcludeProperty IPX*, WINS*
-    $NIC = Get-WmiObject -Class Win32_NetworkAdapterConfiguration | where ServiceName -eq $NicServiceName | Select-Object -Property *  #IPEnabled=TRUE -ComputerName $Workstation -ErrorAction Stop | Select-Object -Property * -ExcludeProperty IPX*, WINS*
+    $NIC = Get-WmiObject -Class Win32_NetworkAdapterConfiguration | Where-Object ServiceName -eq $NicServiceName | Select-Object -Property *  #IPEnabled=TRUE -ComputerName $Workstation -ErrorAction Stop | Select-Object -Property * -ExcludeProperty IPX*, WINS*
     #$AllNetworkAdaptors = Get-WmiObject -Class Win32_NetworkAdapterConfiguration -Filter IPEnabled=TRUE -ComputerName $Workstation -ErrorAction Stop | Select-Object -Property * -ExcludeProperty IPX*, WINS*
     #$AllNetworkAdaptors = Get-NetAdapter | select -Property * | Where-Object {(($_.Status -EQ 'Up' ) -and ($_.ComponentID -match 'PCI'))} 
 #    foreach($NIC in $AllNetworkAdaptors)
