@@ -78,13 +78,14 @@ BEGIN{
       $Workstation = $env:COMPUTERNAME
     )
     $NicServiceName = (Get-WmiObject -Class win32_networkadapter -Filter 'netconnectionstatus = 2').ServiceName # | select -Property *
-    $AllNetworkAdaptors = Get-WmiObject -Class Win32_NetworkAdapterConfiguration | Select-Object -Property * # -Filter ServiceName=$ServiceName #IPEnabled=TRUE -ComputerName $Workstation -ErrorAction Stop | Select-Object -Property * -ExcludeProperty IPX*, WINS*
+#    $AllNetworkAdaptors = Get-WmiObject -Class Win32_NetworkAdapterConfiguration | where ServiceName -eq $NicServiceName | Select-Object -Property *  #IPEnabled=TRUE -ComputerName $Workstation -ErrorAction Stop | Select-Object -Property * -ExcludeProperty IPX*, WINS*
+    $NIC = Get-WmiObject -Class Win32_NetworkAdapterConfiguration | where ServiceName -eq $NicServiceName | Select-Object -Property *  #IPEnabled=TRUE -ComputerName $Workstation -ErrorAction Stop | Select-Object -Property * -ExcludeProperty IPX*, WINS*
     #$AllNetworkAdaptors = Get-WmiObject -Class Win32_NetworkAdapterConfiguration -Filter IPEnabled=TRUE -ComputerName $Workstation -ErrorAction Stop | Select-Object -Property * -ExcludeProperty IPX*, WINS*
     #$AllNetworkAdaptors = Get-NetAdapter | select -Property * | Where-Object {(($_.Status -EQ 'Up' ) -and ($_.ComponentID -match 'PCI'))} 
-    foreach($NIC in $AllNetworkAdaptors)
-    {
-      if($NIC.ServiceName -eq $NicServiceName) 
-      {
+#    foreach($NIC in $AllNetworkAdaptors)
+ #   {
+#      if($NIC.ServiceName -eq $NicServiceName) 
+#      {
         $NICinfo.DNSHostName          = $NIC.DNSHostName
         $NICinfo.IPAddress            = $NIC.IPAddress[0]
         $NICinfo.DefaultIPGateway     = $NIC.DefaultIPGateway[0]
@@ -100,8 +101,8 @@ BEGIN{
         {
           $NICinfo.DHCPServer         = 'False'
         }
-      }
-    }
+#      }
+#    }
   }
   $userName = $env:USERNAME
   $DateStamp = Get-Date -Format yyMMddTHHmmss
