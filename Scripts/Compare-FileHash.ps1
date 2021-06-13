@@ -18,6 +18,7 @@ Function Compare-FileHash
       .Example
       Compare-FileHash -fileName file.txt -Hash  186F5AC26F4E9B12F861485485080A30BABA6F82 -Algorithm SHA1
   #>
+
   Param(
     [Parameter(Mandatory,HelpMessage = 'The file that you are testing against.  Normally the file that you just downloaded.')]
     [string] $fileName
@@ -29,6 +30,7 @@ Function Compare-FileHash
     [ValidateSet('SHA1','SHA256','SHA384','SHA512','MD5')]
     [string] $algorithm
   )
+ 
   $fileHash = Get-FileHash -Algorithm $algorithm -Path $fileName |
   ForEach-Object -Process {
     $_.Hash
