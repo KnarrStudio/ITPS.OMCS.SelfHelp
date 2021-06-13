@@ -31,24 +31,20 @@ Function Compare-FileHash
     [string] $algorithm
   )
  
-  $fileHash = Get-FileHash -Algorithm $algorithm -Path $fileName |
-  ForEach-Object -Process {
-    $_.Hash
-  } |
-  Out-String
-  Write-Output -InputObject ('File = {0}' -f $fileName)
-  Write-Output -InputObject ('Algorithm = {0}' -f $algorithm)
-  Write-Output -InputObject ('Original hash = {0}' -f $originalhash)
-  Write-Output -InputObject ('Current hash = {0}' -f $fileHash)
-    
+  $fileHash = (Get-FileHash -Algorithm $algorithm -Path $fileName).Hash
   $fileHash = $fileHash.Trim()
+  $originalhash = $originalhash.Trim()
+  $output = ('File: {1}{0}Algorithm: {2}{0}Original hash: {3}{0}Current file:  {4}' -f [environment]::NewLine, $fileName, $algorithm, $originalhash, $fileHash)
+
   If ($fileHash -eq $originalhash) 
   {
-    Write-Host -Object 'Matches' -ForegroundColor Green
+    Write-Host -Object '---- Matches ----' -ForegroundColor White -BackgroundColor Green
   }
   else 
   {
-    Write-Host -Object "Doesn't match" -ForegroundColor Red
+    Write-Host -Object '---- Does not match ----' -ForegroundColor White -BackgroundColor Red
   }
+
+  Write-Output -InputObject $output
 }
 
