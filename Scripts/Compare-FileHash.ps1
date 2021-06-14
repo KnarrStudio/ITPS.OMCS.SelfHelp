@@ -34,7 +34,7 @@ Function Compare-FileHash
   $fileHash = (Get-FileHash -Algorithm $algorithm -Path $fileName).Hash
   $fileHash = $fileHash.Trim()
   $originalhash = $originalhash.Trim()
-  $output = ('{0}File: {1}{0}Algorithm: {2}{0}Original hash: {3}{0}Current file:  {4}' -f [environment]::NewLine, $fileName, $algorithm, $originalhash, $fileHash)
+  $output = ('File: {1}{0}Algorithm: {2}{0}Original hash: {3}{0}Current file:  {4}' -f [environment]::NewLine, $fileName, $algorithm, $originalhash, $fileHash)
 
   If ($fileHash -eq $originalhash) 
   {
