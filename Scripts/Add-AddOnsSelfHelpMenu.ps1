@@ -10,22 +10,20 @@ $MenuObject.Submenus.Add('Test the Internet',{
     C:\Users\erika\Documents\GitHub\ITPS-SelfHelp\Scripts\Test-TheInternet.ps1
 },'Ctrl+Alt+T')   
 $MenuObject.Submenus.Add('Compare File Hash',{
-    C:\Users\erika\Documents\GitHub\ITPS-SelfHelp\Scripts\Compare-FileHash.ps1
+    . C:\Users\erika\Documents\GitHub\ITPS-SelfHelp\Scripts\Compare-FileHash.ps1
 },'Ctrl+Alt+F')
 $MenuObject.Submenus.Add('Test Authentication Server',{
     C:\Users\erika\Documents\GitHub\ITPS-SelfHelp\Scripts\Test-AuthentationServer.ps1
 },'Ctrl+Alt+A')
+$MenuObject.Submenus.Add('Ping IP Range',{
+    . C:\Users\erika\Documents\GitHub\AssetManagentapp\Ping-IpRange.ps1
+},'Ctrl+Alt+P')
 
 
-# Clear the AddOnsMenu
-#$MenuObject.AddOnsMenu.Clear() 
-
-# Clear the Submenu
-#$MenuObject.Submenus.Clear() 
 
 
 ########################################
-# Clear the Add-ons menu if one exists.
+# Clear the Add-ons menu
 #$psISE.CurrentPowerShellTab.AddOnsMenu.SubMenus.Clear()
 
 # Create an AddOns menu with an accessor.
