@@ -26,9 +26,9 @@ Function Compare-FileHash
     [Parameter(Mandatory,HelpMessage = 'The original hash that you are expecting it to be the same.  Normally provided by website at download.')]
     [string] $originalhash
     ,
-    [Parameter(Mandatory,HelpMessage = 'Enter "SHA256" as an example.  Or press "TAB".')]
+    [Parameter(Mandatory = $false ,HelpMessage = 'Enter "SHA256" as an example.  Or press "TAB".')]
     [ValidateSet('SHA1','SHA256','SHA384','SHA512','MD5')]
-    [string] $algorithm
+    [string] $algorithm = 'SHA256'
   )
  
   $fileHash = (Get-FileHash -Algorithm $algorithm -Path $fileName).Hash
