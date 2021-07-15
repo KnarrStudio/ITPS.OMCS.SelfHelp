@@ -7,16 +7,16 @@ $MenuObject = $psISE.CurrentPowerShellTab.AddOnsMenu.Submenus.Add('Self Help',$n
 
 # Create the Submenu Object
 $MenuObject.Submenus.Add('Test the Internet',{
-    C:\Users\erika\Documents\GitHub\ITPS-SelfHelp\Scripts\Test-TheInternet.ps1
+    $env:USERPROFILE\Documents\GitHub\ITPS-SelfHelp\Scripts\Test-TheInternet.ps1
 },'Ctrl+Alt+T')   
 $MenuObject.Submenus.Add('Compare File Hash',{
-    . C:\Users\erika\Documents\GitHub\ITPS-SelfHelp\Scripts\Compare-FileHash.ps1
+    . $env:USERPROFILE\Documents\GitHub\ITPS-SelfHelp\Scripts\Compare-FileHash.ps1
 },'Ctrl+Alt+F')
 $MenuObject.Submenus.Add('Test Authentication Server',{
-    C:\Users\erika\Documents\GitHub\ITPS-SelfHelp\Scripts\Test-AuthentationServer.ps1
+    $env:USERPROFILE\Documents\GitHub\ITPS-SelfHelp\Scripts\Test-AuthentationServer.ps1
 },'Ctrl+Alt+A')
 $MenuObject.Submenus.Add('Ping IP Range',{
-    . C:\Users\erika\Documents\GitHub\AssetManagentapp\Ping-IpRange.ps1
+    . $env:USERPROFILE\Documents\GitHub\AssetManagentapp\Ping-IpRange.ps1
 },'Ctrl+Alt+P')
 
 
