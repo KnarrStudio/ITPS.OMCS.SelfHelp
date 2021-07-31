@@ -12,13 +12,13 @@
 RootModule = '.\loader.psm1'
 
 # Version number of this module.
-ModuleVersion = '2.0.0.5'
+ModuleVersion = '2.0.1.10'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
 
 # ID used to uniquely identify this module
-GUID = '321176da-c03b-464b-bad9-630de3269dc1'
+GUID = 'aec19e3e-0a8a-4931-9b48-991b95917736'
 
 # Author of this module
 Author = 'Erik'
@@ -69,7 +69,8 @@ RequiredModules = @('NetTCPIP')
 # NestedModules = @()
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
-FunctionsToExport = @()
+FunctionsToExport = 'Convert-IPAddresstoBinary', 'Move-Cursor', 'Test-AuthentationServer', 
+               'Test-TheInternet'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = '*'
