@@ -3,8 +3,15 @@
 
 $PSGallery = 'LocalPSGallery'
 $ModuleName = 'ITPS-SelfHelp'
-$ModuleLocation = 'd:/GitHub/KnarrStudio/'
 
+if(Test-Path -Path $env:USERPROFILE\Documents\GitHub)
+{
+  $ModuleLocation = "$env:USERPROFILE\Documents\GitHub\"
+}
+elseif(Test-Path -Path D:/GitHub/KnarrStudio)
+{
+  'd:/GitHub/KnarrStudio'
+}
 Set-Location -Path $ModuleLocation
 
 $PublishSplat = @{
@@ -13,13 +20,12 @@ $PublishSplat = @{
 }
 
 $InstallSplat = @{
- Name = $ModuleName
- Repository = $PSGallery
- Scope = 'CurrentUser' 
- AllowClobber = $true
- Force = $true
- }
-
+  Name         = $ModuleName
+  Repository   = $PSGallery
+  Scope        = 'CurrentUser'
+  AllowClobber = $true
+  Force        = $true
+}
 
 
 Publish-Module @PublishSplat 
