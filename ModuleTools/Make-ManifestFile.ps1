@@ -8,10 +8,10 @@ $SplatSettings = @{
   Guid              = "$(New-Guid)"
   Author            = 'Erik'
   CompanyName       = 'KnarrStudio'
-  ModuleVersion     = '2.0.0.5'
+  ModuleVersion     = '2.0.1.10'
   Description       = 'Tools that can be used without admin rights'
   PowerShellVersion = '3.0'
-  FunctionsToExport = @()
+  FunctionsToExport = @('Convert-IPAddresstoBinary','Move-Cursor','Test-AuthentationServer','Test-TheInternet')
   CmdletsToExport   = '*'
   RequiredModules   = @('NetTCPIP')
 
