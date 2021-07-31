@@ -1,5 +1,4 @@
-﻿#requires -Version 3.0
-function Move-Cursor
+﻿function Move-Cursor
 {
   <#
       .SYNOPSIS
@@ -74,4 +73,3 @@ function Move-Cursor
   }
   END{}
 }
-Move-Cursor
