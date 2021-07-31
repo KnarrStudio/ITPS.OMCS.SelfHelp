@@ -1,7 +1,7 @@
 ﻿
 # .Add("Title of Menu",{Scriptblock},"HotKeys 'Ctrl+Alt+B'")
 
-Import-Module ITPS-SelfHelp
+# Import-Module ITPS-SelfHelp
 
 # Create the Menu Object
 $MenuObject = $psISE.CurrentPowerShellTab.AddOnsMenu.Submenus.Add('Self Help',$null,$null) 
