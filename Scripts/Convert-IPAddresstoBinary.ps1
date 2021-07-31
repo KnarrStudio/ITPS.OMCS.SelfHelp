@@ -8,4 +8,3 @@
 $dottedDecimal.split('.') | ForEach-Object{$binary=$binary + $([convert]::toString($_,2).padleft(8,'0'))}
  return $binary
 }
-
