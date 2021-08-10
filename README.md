@@ -5,6 +5,9 @@ Self help for the normal user.
 **Test-TheInternet.ps1** - This came about after trying to walk people through the standard. **_IPCONFIG_** and **_PING_** the gateway.  Finds different information about the network, network card and network path.  Then "pings" those IP Addresses.  It provides an output on the console and the in a txt file shown below.
  
 **Gathering the information on your NIC**  
+```Powershell
+Gathering the information on your NIC
+
 DNSHostName            : Workstation Name          
 IPAddress              : 192.168.1.247           
 DefaultIPGateway       : 192.168.1.1             
@@ -30,3 +33,5 @@ _WARNING: Ping to 192.168.1.3 failed with status: DestinationHostUnreachable_
 **Testing ExternalIp:**  
 18.117.109.252         : Passed                    
 Find the report: C:\temp\Username-200721T070003.txt  
+```
+
