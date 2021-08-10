@@ -2,7 +2,7 @@
 #requires -Version 2.0 -Modules PowerShellGet
 
 $PSGallery = 'NasPSGallery'
-$ModuleName = 'ITPS-SelfHelp'
+$ModuleName = 'ITPS.OMCS.SelfHelp'
 
 if(Test-Path -Path $env:USERPROFILE\Documents\GitHub)
 {
