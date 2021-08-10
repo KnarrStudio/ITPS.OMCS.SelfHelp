@@ -1,4 +1,6 @@
-﻿function Test-AuthentationServer
+﻿#requires -Version 1.0
+
+function Test-AuthentationServer
 {
   <#
       .SYNOPSIS
@@ -26,3 +28,4 @@
     Write-Output -InputObject ('Local Workstation: {0}' -f $env:COMPUTERNAME)
   }
 }
+Test-AuthentationServer

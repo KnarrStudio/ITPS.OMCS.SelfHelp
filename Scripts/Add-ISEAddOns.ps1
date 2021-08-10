@@ -1,11 +1,21 @@
 ﻿
 # .Add("Title of Menu",{Scriptblock},"HotKeys 'Ctrl+Alt+B'")
 
+# Import-Module ITPS-SelfHelp
+
 # Create the Menu Object
 $MenuObject = $psISE.CurrentPowerShellTab.AddOnsMenu.Submenus.Add('Self Help',$null,$null) 
 
 
 # Create the Submenu Object
+$MenuObject.Submenus.Add('Test the Internet',{Test-TheInternet},'Ctrl+Alt+T')  
+#$MenuObject.Submenus.Add('Convert IP Address to Binary',{Convert-IPAddresstoBinary},$null)
+$MenuObject.Submenus.Add('Test Authentication Server',{Test-AuthentationServer},'Ctrl+Alt+A')
+
+
+
+
+<#
 $MenuObject.Submenus.Add('Test the Internet',{
     $env:USERPROFILE\Documents\GitHub\ITPS-SelfHelp\Scripts\Test-TheInternet.ps1
 },'Ctrl+Alt+T')   
@@ -18,7 +28,7 @@ $MenuObject.Submenus.Add('Test Authentication Server',{
 $MenuObject.Submenus.Add('Ping IP Range',{
     . $env:USERPROFILE\Documents\GitHub\AssetManagentapp\Ping-IpRange.ps1
 },'Ctrl+Alt+P')
-
+#>
 
 
 
