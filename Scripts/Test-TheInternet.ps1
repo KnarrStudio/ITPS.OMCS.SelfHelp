@@ -1,6 +1,46 @@
 ﻿#requires -Version 3.0 -Modules Microsoft.PowerShell.Utility, NetTCPIP
   function Test-TheInternet
 {
+<#PSScriptInfo
+
+.VERSION 1.1.1
+
+.GUID 4df65b29-eafd-4ddc-863d-114a67f4532a
+
+.AUTHOR Erik
+
+.COMPANYNAME KnarrStudio
+
+.COPYRIGHT 2021 KnarrStudio
+
+.TAGS 
+
+.LICENSEURI 
+
+.PROJECTURI https://github.com/KnarrStudio/ITPS.OMCS.SelfHelp
+
+.ICONURI 
+
+.EXTERNALMODULEDEPENDENCIES 
+
+.REQUIREDSCRIPTS 
+
+.EXTERNALSCRIPTDEPENDENCIES 
+
+.RELEASENOTES
+Provides an output on the console and the in a txt file:
+DNSHostName
+IPAddress
+DefaultIPGateway
+DNSServerSearchOrder
+DHCPEnabled
+IPSubnet
+Description of NIC
+MACAddress
+
+#>
+
+
   <#
     .SYNOPSIS
     Tests or "pings" the key points of your internet connection
@@ -38,7 +78,7 @@
   #>
   BEGIN{
     $TextColorWarning = 'Yellow'
-    function Test-NetworkConnection
+    function Script:Test-NetworkConnection
     {
       <#
         .SYNOPSIS
@@ -79,22 +119,22 @@
           $PingSucceeded = (Test-NetConnection -ComputerName $Target).PingSucceeded
           if($PingSucceeded -eq $true)
           {
-            $TestResults = 'Passed'
-          }
+$TestResults = 'Passed'
+}
           elseif($PingSucceeded -eq $false)
           {
-            $TestResults = 'Failed'
-          }
+$TestResults = 'Failed'
+}
           Write-Output -InputObject ($Formatting -f $Target, $Delimeter, $TestResults)
           ($Formatting -f $TestName, $Delimeter, $TestResults) | Out-File -FilePath $NetworkReportFullName -Append
         }
       }
       Catch
       {
-        Write-Output -InputObject ('{0} Failed' -f $TestName)
-      }
+Write-Output -InputObject ('{0} Failed' -f $TestName)
+}
     }
-    function Get-WebFacingIPAddress
+    function Script:Get-WebFacingIPAddress
     {
       <#
         .SYNOPSIS
@@ -120,7 +160,7 @@
       (
         [Parameter(Position = 0)]
         [String]$URL = 'http://checkip.dyndns.org/',
-        [Parameter(Mandatory,HelpMessage='Add Local active IPAddress. "ipconfig/ifconfig"',Position = 1)]
+        [Parameter(Mandatory,HelpMessage = 'Add Local active IPAddress. "ipconfig/ifconfig"',Position = 1)]
         [String]$IpAddress
       )
       $Delimeter = ':'
@@ -129,8 +169,8 @@
       $PrivateIp = ($PrivateArray | ForEach-Object -Process {
           if($IpAddress.Contains($_))
           {
-            $true
-          }
+$true
+}
       })
       Write-Verbose -Message ('Ip Address {0}' -f $IpAddress)
       if($PrivateIp)
@@ -141,13 +181,13 @@
       }
       else
       {
-        $ExternalIp = $IpAddress
-      }
+$ExternalIp = $IpAddress
+}
       $NICinfo.ExternalIp = $ExternalIp
       Write-Verbose -Message ('This is the IP address you are presenting to the internet')
       Write-Output -InputObject ($Formatting -f 'External IP', $Delimeter, $ExternalIp)
     }
-    function Get-NICinformation
+    function Script:Get-NICinformation
     {
       <#
         .SYNOPSIS
@@ -162,9 +202,13 @@
         $Workstation = $env:COMPUTERNAME
       )
       #$NicServiceName = (Get-NetAdapter -physical -| where status -eq 'up') 
-      $NicServiceName = (Get-WmiObject -Class win32_networkadapter -Filter 'netconnectionstatus = 2' | Where-Object { $_.Description -notmatch 'virtual'  }).ServiceName  #select -Property *
+      $NicServiceName = (Get-WmiObject -Class win32_networkadapter -Filter 'netconnectionstatus = 2' | Where-Object -FilterScript {
+ $_.Description -notmatch 'virtual'  
+}).ServiceName  #select -Property *
       #    $AllNetworkAdaptors = Get-WmiObject -Class Win32_NetworkAdapterConfiguration | where ServiceName -eq $NicServiceName | Select-Object -Property *  #IPEnabled=TRUE -ComputerName $Workstation -ErrorAction Stop | Select-Object -Property * -ExcludeProperty IPX*, WINS*
-      $NIC = Get-WmiObject -Class Win32_NetworkAdapterConfiguration | Where-Object ServiceName -eq $NicServiceName | Select-Object -Property *  #IPEnabled=TRUE -ComputerName $Workstation -ErrorAction Stop | Select-Object -Property * -ExcludeProperty IPX*, WINS*
+      $NIC = Get-WmiObject -Class Win32_NetworkAdapterConfiguration |
+Where-Object -Property ServiceName -EQ -Value $NicServiceName |
+Select-Object -Property *  #IPEnabled=TRUE -ComputerName $Workstation -ErrorAction Stop | Select-Object -Property * -ExcludeProperty IPX*, WINS*
       #$AllNetworkAdaptors = Get-WmiObject -Class Win32_NetworkAdapterConfiguration -Filter IPEnabled=TRUE -ComputerName $Workstation -ErrorAction Stop | Select-Object -Property * -ExcludeProperty IPX*, WINS*
       #$AllNetworkAdaptors = Get-NetAdapter | select -Property * | Where-Object {(($_.Status -EQ 'Up' ) -and ($_.ComponentID -match 'PCI'))} 
       #    foreach($NIC in $AllNetworkAdaptors)
@@ -180,12 +224,12 @@
       $NICinfo.MACAddress           = $NIC.MACAddress
       if($NIC.DHCPEnabled) 
       {
-        $NICinfo.DHCPServer         = $NIC.DHCPServer
-      }
+$NICinfo.DHCPServer         = $NIC.DHCPServer
+}
       Else
       {
-        $NICinfo.DHCPServer         = 'False'
-      }
+$NICinfo.DHCPServer         = 'False'
+}
       #      }
       #    }
     }
@@ -231,8 +275,8 @@
     }
     catch
     {
-      Write-Output -InputObject ($Formatting -f 'Authentication Server', $Delimeter, 'Not Available')
-    }
+Write-Output -InputObject ($Formatting -f 'Authentication Server', $Delimeter, 'Not Available')
+}
     Write-Host -Object ('Finding the Web facing IP Address') -ForegroundColor $TextColorWarning
     Get-WebFacingIPAddress -IpAddress $($NICinfo.IPAddress)
     Test-NetworkConnection
@@ -241,8 +285,8 @@
     Test-NetworkConnection -TestName 'DNSServerSearchOrder' -TargetNameIp $($NICinfo.DNSServerSearchOrder) 
     if($NICinfo.DHCPServer -ne 'False')
     {
-      Test-NetworkConnection -TestName 'DHCPServer' -TargetNameIp $NICinfo.DHCPServer
-    }
+Test-NetworkConnection -TestName 'DHCPServer' -TargetNameIp $NICinfo.DHCPServer
+}
     Test-NetworkConnection -TestName 'ExternalIp' -TargetNameIp $NICinfo['ExternalIp'] 
   }
   END{
