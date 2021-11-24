@@ -2,7 +2,9 @@
 Self help for the normal user.  
 
 ## Scripts
-**Test-TheInternet.ps1** - This came about after trying to walk people through the standard. **_IPCONFIG_** and **_PING_** the gateway.  Finds different information about the network, network card and network path.  Then "pings" those IP Addresses.  It provides an output on the console and the in a txt file shown below.
+**Test-TheInternet.ps1** - This came about after trying to walk people through the standard troubleshooting steps of **_IPCONFIG_** and **_PINGing_** the gateway.  
+
+Test-TheInternet finds different information about the network, network card and network path.  Then "pings" those IP Addresses.  It provides an output on the console and the in a txt file shown below.
  
 **Gathering the information on your NIC**  
 ```Powershell
