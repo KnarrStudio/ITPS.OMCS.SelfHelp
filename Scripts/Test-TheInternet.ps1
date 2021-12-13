@@ -76,6 +76,12 @@
 
   #>
 
+      param
+      (
+        [Parameter(Position = 0)]
+        [string]$FilePath
+      )
+
   BEGIN{
     $TextColorWarning = 'Yellow'
     function Script:Test-NetworkConnection
@@ -193,7 +199,6 @@
           .SYNOPSIS
           Returns information about the local active NIC.
       #>
-      
       
       param
       (
