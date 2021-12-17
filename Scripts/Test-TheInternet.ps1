@@ -3,9 +3,9 @@ function Test-TheInternet
 {
   <#PSScriptInfo
 
-      .VERSION 3.1.1
+      .VERSION 3.1.2
 
-      .GUID 4df65b29-eafd-4ddc-863d-114a67f4532a
+      .GUID ace3cc09-e726-4f25-9617-ea3d1f52aaba
 
       .AUTHOR Erik
 
@@ -49,27 +49,37 @@ function Test-TheInternet
       Test-TheInternet
 
       Output:
-      Gathering the information on your NIC
-      DNSHostName : Workstation Name
-      IPAddress : 192.168.1.247
-      DefaultIPGateway : 192.168.1.1
-      DNSServerSearchOrder : 192.168.1.3, 9.9.9.9
-      DHCPEnabled : 192.168.1.1
-      IPSubnet : 255.255.255.0
-      Description of NIC : Intel(R) Wireless-N
-      MACAddress : 00:0B:01:C1:56:77
-      Finding the Web facing IP Address External IP : 18.117.109.252
-      Testing Loopback connection: 127.0.0.1 : Passed
-      Testing IPAddress:
-      192.168.1.247 : Passed
-      Testing DefaultIPGateway: 192.168.1.1 : Passed
-      Testing DNSServerSearchOrder: WARNING: Ping to 192.168.1.3 failed with status: DestinationHostUnreachable
-      192.168.1.3 : Failed
-      9.9.9.9 : Passed
-      Testing DHCPServer: 192.168.1.1 : Passed
-      Testing ExternalIp:
-      18.117.109.252 : Passed
-      Find the report: C:\temp\Username-200721T070003.txt
+        Gathering the information on your NICs
+        Displaying information on the active NIC
+        DNSHostName            : Lenovo-Server
+        IPAddress              : 192.168.0.100
+        DefaultIPGateway       : 192.168.0.1
+        DNSServerSearchOrder   : 9.9.9.9, 192.168.1.3
+        DHCPEnabled            : 192.168.0.1
+        IPSubnet               : 255.255.255.0
+        Description of NIC     : Realtek PCIeController
+        MACAddress             : 54:E1:AD:B0:0d:0d
+        Finding the Web facing IP Address
+        External IP            : 18.117.109.252
+        Checking for an Authentication Server
+        Authentication Server  : Not Available
+        
+                     : ---------- Testing ---------- :
+        Testing Loopback connection:
+        127.0.0.1              : Passed
+        Testing IPAddress:
+        192.168.0.100          : Passed
+        Testing DefaultIPGateway:
+        192.168.0.1            : Passed
+        Testing DNSServerSearchOrder:
+        9.9.9.9                : Passed
+        Testing DNSServerSearchOrder: WARNING: Ping to 192.168.1.3 failed with status: DestinationHostUnreachable
+        192.168.1.3            : Failed
+        Testing DHCPServer:
+        192.168.0.1            : Passed
+        Testing ExternalIp:
+        18.117.109.252          : Failed
+        Find the report: C:\temp\Username-200721T070003.txt
 
       .LINK
       https://github.com/KnarrStudio/ITPS.OMCS.SelfHelp/blob/master/README.md
