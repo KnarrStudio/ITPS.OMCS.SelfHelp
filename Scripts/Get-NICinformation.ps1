@@ -1,6 +1,4 @@
-﻿$NICinfo = @{}
-
-function Script:Get-NICInformation
+﻿function Script:Get-PhysicalNICInformation
 {
   <#
       .SYNOPSIS
@@ -34,41 +32,42 @@ function Script:Get-NICInformation
     $NICinfo.$AdptrName.LinkSpeed = $PhysAdptr.LinkSpeed
     $NICinfo.$AdptrName.InterfaceDescription = $PhysAdptr.InterfaceDescription
     $NICinfo.$AdptrName.MediaConnectionState = $PhysAdptr.MediaConnectionState 
-  }
-  
-  foreach($NicName in $PhysicalAdapters.Name)
-  {
-    Write-Verbose -Message ('NIC Name: {0}' -f $NicName) -Verbose
-    $ifindex = (Get-NetAdapter -Name $NicName).ifIndex
+
+    if($PhysAdptr.AdminStatus -eq 'Up')
+    {
+      try
+      {
+        $NICinfo.$AdptrName.Statistics = (Get-NetAdapterStatistics -Name $AdptrName)
+      }
+      catch
+      {
+        $NICinfo.$AdptrName.Statistics = 'N/A'
+      }
+    }
+
+    Write-Verbose -Message ('NIC Name: {0}' -f $AdptrName) -Verbose
+    $ifindex = (Get-NetAdapter -Name $AdptrName).ifIndex
     Write-Verbose -Message ('Interface Index: {0}' -f $ifindex) -Verbose
-    $NICinfo.$NicName.Config = Get-CimInstance -ClassName Win32_NetworkAdapterConfiguration |
+    $NICinfo.$AdptrName.Config = Get-CimInstance -ClassName Win32_NetworkAdapterConfiguration |
     Where-Object -Property interfaceindex -EQ -Value $ifindex |
     Select-Object -Property *
-    $NICinfo.$NicName.Statistics = (Get-NetAdapterStatistics -Name $NicName)
-    
-    }
+  }
+  
+  <#  foreach($NicName in $PhysicalAdapters.Name)
+      {
+      Write-Verbose -Message ('NIC Name: {0}' -f $NicName) -Verbose
+      $ifindex = (Get-NetAdapter -Name $NicName).ifIndex
+      Write-Verbose -Message ('Interface Index: {0}' -f $ifindex) -Verbose
+      $NICinfo.$NicName.Config = Get-CimInstance -ClassName Win32_NetworkAdapterConfiguration |
+      Where-Object -Property interfaceindex -EQ -Value $ifindex |
+      Select-Object -Property *
+
+  }#>
+
 
   Return $NICinfo
 }
 
-Get-NICInformation
+Get-PhysicalNICInformation
 
 
-foreach($NicNam in $NICinfo.Keys){
-Write-Host -Object ('{0} - {1}/{2}' -f $NicNam,$NICinfo.$NicNam.AdminStatus,$NICinfo.$NicNam.MediaConnectionState)
-
-if(($NICinfo.$NicNam.AdminStatus -eq 'Up') -and ($NICinfo.$NicNam.MediaConnectionState -eq 'Connected')){
-#Write-Host -Object ('{0} - {1}/{2}' -f $n,$NICinfo.$n.AdminStatus,$NICinfo.$n.MediaConnectionState)
-$ReceivedStart = $NICinfo.$NicNam.Statistics.ReceivedBytes
-Start-Sleep 2
-$ReceivedEnd = (Get-NetAdapterStatistics -Name $NicNam).ReceivedBytes
-if($ReceivedStart -lt $ReceivedEnd){
-}
-
-}elseif(($NICinfo.$NicNam.AdminStatus -eq 'Up') -and ($NICinfo.$NicNam.MediaConnectionState -ne 'Connected')){
-#Write-Host -Object ('{0} - {1}/{2}' -f $n,$NICinfo.$n.AdminStatus,$NICinfo.$n.MediaConnectionState)
-
-
-}
-
-}

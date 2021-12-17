@@ -3,7 +3,7 @@ function Test-TheInternet
 {
   <#PSScriptInfo
 
-      .VERSION 3.1.1
+      .VERSION 1.1.1
 
       .GUID 4df65b29-eafd-4ddc-863d-114a67f4532a
 
@@ -79,7 +79,7 @@ function Test-TheInternet
   param
   (
     [Parameter(Position = 0)]
-    [string]$OutputPath = "$env:TEMP"
+    [string]$FilePath
   )
 
   BEGIN{
@@ -87,24 +87,24 @@ function Test-TheInternet
     
     $userName = $env:USERNAME
     $DateStamp = Get-Date -Format yyMMddTHHmmss
+    $NetworkReportPath = "$env:TEMP"
     $NetworkReportName = ('{0}-{1}.txt' -f $userName, $DateStamp)
-    $NetworkReportFullName = ('{0}\{1}' -f $OutputPath, $NetworkReportName)
+    $NetworkReportFullName = ('{0}\{1}' -f $NetworkReportPath, $NetworkReportName)
     $Null = New-Item -Path $NetworkReportFullName -ItemType File
     $TempFile = New-TemporaryFile 
     $Delimeter = ':'
     $Formatting = '{0,-23}{1,-2}{2,-24}'
     $Script:NICinfo = [Ordered]@{
-      DNSHostName          = 'Not Available'
-      IPAddress            = 'Not Available'
-      DefaultIPGateway     = 'Not Available'
-      DNSServerSearchOrder = 'Not Available'
-      DHCPServer           = 'Not Available'
-      IPSubnet             = 'Not Available'
-      Description          = 'Not Available'
-      MACAddress           = 'Not Available'
-      ExternalIp           = 'Not Available'
+      DNSHostName          = ''
+      IPAddress            = ''
+      DefaultIPGateway     = ''
+      DNSServerSearchOrder = ''
+      DHCPServer           = ''
+      IPSubnet             = ''
+      Description          = ''
+      MACAddress           = ''
+      ExternalIp           = ''
     }
-
     function Script:Get-PhysicalNICInformation
     {
       <#
@@ -173,7 +173,7 @@ function Test-TheInternet
 
 
       Return $AdapterInfo
-    } #End: Get-PhysicalNICInformation
+    }
 
     function Script:Select-NetworkAdapter
     {
@@ -184,7 +184,7 @@ function Test-TheInternet
 
       param
       (
-        [Parameter(Mandatory = $true,
+        [Parameter(Mandatory = $false,
             ValueFromPipeline = $true,
             ValueFromPipelineByPropertyName = $true,
             #SupportsShouldProcess=$true,
@@ -259,7 +259,7 @@ function Test-TheInternet
         } # End Switch
       } # End Foreach key
       Return $NicState
-    } #End: Select-NetworkAdapter
+    }
 
     function Script:Test-NetworkConnection
     {
@@ -277,36 +277,29 @@ function Test-TheInternet
           IP Address of the system that needs to be tested.
         
           .EXAMPLE
-          Test-NetworkConnection -TestName 'My Gateway' -TargetNameIp 192.168.0.1 -NetworkReportFullName test.txt
-          This will ping the 192.168.0.1 address and lable it 'My Gateway' and send the results to the file test.txt
+          Test-NetworkConnection -TestName 'My Gateway' -TargetNameIp 192.168.0.1
+          This will ping the 192.168.0.1 address and lable it 'My Gateway'
         
       #>
+      
       
       param
       (
         [Parameter(Position = 0)]
         [string]$TestName = 'Loopback connection',
         [Parameter(Position = 1)]
-        [AllowNull()]
-        [AllowEmptyCollection()]
-        [AllowEmptyString()]
         [string[]]$TargetNameIp = '127.0.0.1',
-        [Parameter(Mandatory = $false)]
-        [Alias('NetworkReportFullName')]
-        [String]$OutputFile
+        [String]$NetworkReportFullName = '.\report.txt'
       )
       $Delimeter = ':'
       $Formatting = '{0,-23}{1,-2}{2,-24}'
-
       Write-Verbose -Message $([String]$TargetNameIp)
-      Write-Host -Object ('Testing {0}:' -f $TestName) -ForegroundColor Yellow
-      Add-Content -Value ('Testing {0}:' -f $TestName) -Path $OutputFile
-    
-      ForEach($Target in $TargetNameIp) 
-      { 
-        try
-        {
-          Write-Verbose -Message ([IpAddress]$Target).IPAddressToString -ErrorAction Stop
+      try
+      {
+        Write-Host -Object ('Testing {0}:' -f $TestName) -ForegroundColor Yellow 
+        ForEach($Target in $TargetNameIp) 
+        { 
+          Write-Verbose -Message $Target 
           $PingSucceeded = (Test-NetConnection -ComputerName $Target).PingSucceeded
           if($PingSucceeded -eq $true)
           {
@@ -316,31 +309,17 @@ function Test-TheInternet
           {
             $TestResults = 'Failed'
           }
-        }
-        Catch
-        {
-          if(($Target -eq $Null) -or ($Target -eq ''))
-          {
-            $TestResults = 'Null or Blank IPAddress'
-          }
-          else
-          {
-            $TestResults = 'Invalid IPAddress'
-          }
-          Write-Verbose -Message ($Formatting -f $Target, $Delimeter, $TestResults) 
-        }
-        if($OutputFile)
-        {
-          Write-Info -Title $Target -Value $TestResults -FilePath $OutputFile
-          #Tee-Object -InputObject ($Formatting -f $Target, $Delimeter, $TestResults) -FilePath $OutputFile -Append
-        }
-        else
-        {
-          Write-Output -InputObject ($Formatting -f $Target, $Delimeter, $TestResults)
+          Add-Content -Value ('Testing {0}:' -f $TestName) -Path $NetworkReportFullName
+          Tee-Object -InputObject ($Formatting -f $Target, $Delimeter, $TestResults) -FilePath $NetworkReportFullName -Append
+          Write-Verbose ($Formatting -f $TestName, $Delimeter, $TestResults) 
         }
       }
-    } #End: Test-NetworkConnection
-    
+      Catch
+      {
+        Write-Output -InputObject ('{0} Failed' -f $TestName)
+      }
+    }
+
     function Script:Get-WebFacingIPAddress
     {
       <#
@@ -361,146 +340,78 @@ function Test-TheInternet
           Looks at the URL for the IP address that is being presented, then compares it against your local machine. 
         
       #>
-
-      [String]$URL = 'http://checkip.dyndns.org/'
-      $Delimeter = ':'
-      $Formatting = '{0,-23}{1,-2}{2,-24}'
-
-      try
-      {
-        $HtmlData = (Invoke-RestMethod -Uri $URL -ErrorAction Stop).html.body
-        $ExternalIp = [string]$HtmlData.Split(':')[1].trim()
-      }
-      catch
-      {
-        $ExternalIp = 'Not Available'
-      }
-      Write-Verbose -Message ('This is the IP address you are presenting to the internet')
-      Write-Verbose -Message $ExternalIp
       
-      Return [String]$ExternalIp
-    } #End: Get-WebFacingIPAddress
-
-    function Script:Write-Info 
-    {
-      <#
-          .SYNOPSIS
-          Output function
-
-          .INPUTS
-          Filename, title of data and data
-
-          .OUTPUTS
-          Formatted input information to the screen and file
-      #>
-
-      [CmdletBinding()]
-      param(
-        [Parameter(Mandatory=$true)][string]$Title,
-        [Parameter(Mandatory=$true)][Object]$Value,
-        [Parameter(Mandatory=$true)][String]$FilePath
+      
+      param
+      (
+        [Parameter(Position = 0)]
+        [String]$URL = 'http://checkip.dyndns.org/',
+        [Parameter(Mandatory,HelpMessage = 'Add Local active IPAddress. "ipconfig/ifconfig"',Position = 1)]
+        [String]$IpAddress
       )
-
       $Delimeter = ':'
       $Formatting = '{0,-23}{1,-2}{2,-24}'
-    
-      Tee-Object -InputObject ($Formatting -f $Title, $Delimeter, $Value) -FilePath $FilePath  -Append
-    } #End: Write-Info 
+      $PrivateArray = @('192.', '10.', '127.')
+      $PrivateIp = ($PrivateArray | ForEach-Object -Process {
+          if($IpAddress.Contains($_))
+          {
+            $true
+          }
+      })
+      Write-Verbose -Message ('Ip Address {0}' -f $IpAddress)
+      if($PrivateIp)
+      {
+        $HtmlData = (Invoke-RestMethod -Uri $URL).html.body
+        $HtmlString = [string]$HtmlData.Replace(' ','')
+        $ExternalIp = ($HtmlString.Split(':'))[1]
+      }
+      else
+      {
+        $ExternalIp = $IpAddress
+      }
+      $NICinfo.ExternalIp = $ExternalIp
+      Write-Verbose -Message ('This is the IP address you are presenting to the internet')
+      Write-Output -InputObject ($Formatting -f 'External IP', $Delimeter, $ExternalIp)
+    }
 
   }
 
   PROCESS{
-    Write-Host -Object ('Gathering the information on your NICs') -ForegroundColor $TextColorWarning
-    
-    $PhysicalNICs = Get-PhysicalNICInformation
-    $ActiveNicName = [String](Select-NetworkAdapter -InputData $PhysicalNICs ).ActiveNicName
-    
-    if($PhysicalNICs.$ActiveNicName.Config.DNSHostName)
-    {
-      $NICinfo.DNSHostName          = $PhysicalNICs.$ActiveNicName.Config.DNSHostName
-    }
-    if($PhysicalNICs.$ActiveNicName.Config.IPAddress[0])
-    {
-      $NICinfo.IPAddress            = $PhysicalNICs.$ActiveNicName.Config.IPAddress[0]
-    }
-    if($PhysicalNICs.$ActiveNicName.Config.DefaultIPGateway)
-    {
-      $NICinfo.DefaultIPGateway     = $PhysicalNICs.$ActiveNicName.Config.DefaultIPGateway[0]
-    }
-    if($PhysicalNICs.$ActiveNicName.Config.DNSServerSearchOrder)
-    {
-      $NICinfo.DNSServerSearchOrder = $PhysicalNICs.$ActiveNicName.Config.DNSServerSearchOrder
-    }
-    if($PhysicalNICs.$ActiveNicName.Config.IPSubnet[0])
-    {
-      $NICinfo.IPSubnet             = $PhysicalNICs.$ActiveNicName.Config.IPSubnet[0]
-    }
-    if($PhysicalNICs.$ActiveNicName.Config.Description)
-    {
-      $NICinfo.Description          = $PhysicalNICs.$ActiveNicName.Config.Description
-    }
-    if($PhysicalNICs.$ActiveNicName.Config.MACAddress)
-    {
-      $NICinfo.MACAddress           = $PhysicalNICs.$ActiveNicName.Config.MACAddress
-    }
-    if($PhysicalNICs.$ActiveNicName.Config.DHCPEnabled) 
-    {
-      $NICinfo.DHCPServer         = $PhysicalNICs.$ActiveNicName.Config.DHCPServer
-    }
-    Else
-    {
-      $NICinfo.DHCPServer         = 'False'
-    }
-
-
-    Write-Host -Object ('Displaying information on the active NIC') -ForegroundColor $TextColorWarning
-    Write-Info -Title 'DNSHostName' -Value $NICinfo.DNSHostName -FilePath $NetworkReportFullName
-    Write-Info -Title 'IPAddress' -Value $NICinfo.IPAddress -FilePath $NetworkReportFullName 
-    Write-Info -Title 'DefaultIPGateway' -Value $NICinfo.DefaultIPGateway -FilePath $NetworkReportFullName 
-    Write-Info -Title 'DNSServerSearchOrder' -Value $(([string]$NICinfo.DNSServerSearchOrder).Replace(' ', ', ')) -FilePath $NetworkReportFullName 
-    Write-Info -Title 'DHCPEnabled' -Value $NICinfo.DHCPServer -FilePath $NetworkReportFullName 
-    Write-Info -Title 'IPSubnet' -Value $NICinfo.IPSubnet -FilePath $NetworkReportFullName
-    Write-Info -Title 'Description of NIC' -Value $NICinfo.Description -FilePath $NetworkReportFullName 
-    Write-Info -Title 'MACAddress' -Value $NICinfo.MACAddress -FilePath $NetworkReportFullName 
-    
-    Write-Host -Object ('Finding the Web facing IP Address') -ForegroundColor $TextColorWarning
-    $NICinfo.ExternalIp = Get-WebFacingIPAddress
-    Write-Info -Title 'External IP' -Value $NICinfo.ExternalIp -FilePath $NetworkReportFullName
-
+    Write-Host -Object ("Gathering the information on your NIC's") -ForegroundColor $TextColorWarning
+    Get-NICInformation
+    Tee-Object -InputObject ($Formatting -f 'DNSHostName', $Delimeter, $NICinfo.DNSHostName) -FilePath $NetworkReportFullName -Append
+    Tee-Object -InputObject ($Formatting -f 'IPAddress', $Delimeter, $NICinfo.IPAddress) -FilePath $NetworkReportFullName -Append
+    Tee-Object -InputObject ($Formatting -f 'DefaultIPGateway', $Delimeter, $NICinfo.DefaultIPGateway) -FilePath $NetworkReportFullName -Append
+    Tee-Object -InputObject ($Formatting -f 'DNSServerSearchOrder', $Delimeter, $(([string]$NICinfo.DNSServerSearchOrder).Replace(' ', ', '))) -FilePath $NetworkReportFullName -Append
+    Tee-Object -InputObject ($Formatting -f 'DHCPEnabled', $Delimeter, $NICinfo.DHCPServer) -FilePath $NetworkReportFullName -Append
+    Tee-Object -InputObject ($Formatting -f 'IPSubnet', $Delimeter, $NICinfo.IPSubnet) -FilePath $NetworkReportFullName -Append
+    Tee-Object -InputObject ($Formatting -f 'Description of NIC', $Delimeter, $NICinfo.Description) -FilePath $NetworkReportFullName -Append
+    Tee-Object -InputObject ($Formatting -f 'MACAddress', $Delimeter, $NICinfo.MACAddress) -FilePath $NetworkReportFullName -Append
     Write-Host -Object ('Checking for an Authentication Server') -ForegroundColor $TextColorWarning
     try
     {
       # Check if computer is connected to domain network
       [void]::([System.DirectoryServices.ActiveDirectory.Domain]::GetComputerDomain())
-      Write-Info -Title 'Authentication Server' -Value $env:LOGONSERVER -FilePath $NetworkReportFullName
+      Write-Output -InputObject ($Formatting -f 'Authentication Server', $Delimeter, $env:LOGONSERVER)
     }
     catch
     {
-      #Write-Output -InputObject ($Formatting -f 'Authentication Server', $Delimeter, 'Not Available')
-      Write-Info -Title 'Authentication Server'-Value 'Not Available' -FilePath $NetworkReportFullName
+      Write-Output -InputObject ($Formatting -f 'Authentication Server', $Delimeter, 'Not Available')
     }
-
-
-    Write-Info -Title "`n`n" -value '---------- Testing ---------- :' -FilePath $NetworkReportFullName
-
-    Test-NetworkConnection -NetworkReportFullName $NetworkReportFullName
-    Test-NetworkConnection -TestName 'IPAddress' -TargetNameIp $NICinfo['IPAddress'] -NetworkReportFullName $NetworkReportFullName 
-    Test-NetworkConnection -TestName 'DefaultIPGateway' -TargetNameIp $NICinfo['DefaultIPGateway'] -NetworkReportFullName $NetworkReportFullName 
-    Test-NetworkConnection -TestName 'DNSServerSearchOrder' -TargetNameIp $($NICinfo.DNSServerSearchOrder) -NetworkReportFullName $NetworkReportFullName 
+    Write-Host -Object ('Finding the Web facing IP Address') -ForegroundColor $TextColorWarning
+    Get-WebFacingIPAddress -IpAddress $($NICinfo.IPAddress)
+    Test-NetworkConnection
+    Test-NetworkConnection -TestName 'IPAddress' -TargetNameIp $NICinfo['IPAddress'] 
+    Test-NetworkConnection -TestName 'DefaultIPGateway' -TargetNameIp $NICinfo['DefaultIPGateway'] 
+    Test-NetworkConnection -TestName 'DNSServerSearchOrder' -TargetNameIp $($NICinfo.DNSServerSearchOrder) 
     if($NICinfo.DHCPServer -ne 'False')
     {
-      Test-NetworkConnection -TestName 'DHCPServer' -TargetNameIp $NICinfo.DHCPServer -NetworkReportFullName $NetworkReportFullName
+      Test-NetworkConnection -TestName 'DHCPServer' -TargetNameIp $NICinfo.DHCPServer
     }
-    Test-NetworkConnection -TestName 'ExternalIp' -TargetNameIp $NICinfo['ExternalIp'] -NetworkReportFullName $NetworkReportFullName 
+    Test-NetworkConnection -TestName 'ExternalIp' -TargetNameIp $NICinfo['ExternalIp'] 
   }
 
-  END{
-    #$NICinfo | Out-File -FilePath $NetworkReportFullName -Append
-    #Get-Content -Path $NetworkReportFullName
-    Write-Output -InputObject ('Find the report: {0}' -f $NetworkReportFullName)
-    ('Find this report: {0}' -f $NetworkReportFullName) |  Out-File -FilePath $NetworkReportFullName -Append
-    Start-Process -FilePath notepad -ArgumentList $NetworkReportFullName
-  } 
-} #End: function Test-TheInternet
+  #Select-NetworkAdapter -InputData $(Get-PhysicalNICInformation )
 
-Test-TheInternet
+  END{}
+} #End: function Test-TheInternet

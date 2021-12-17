@@ -15,103 +15,72 @@
     [ValidateNotNull()]
     [ValidateNotNullOrEmpty()]
     [Alias('InputData')]
-    [Object]$InputObject = $NICinfo
+    [Object]$NICinfo
   )
   
-  $Disabled  = @()
-  $NicOutputData = @{}
+  $Script:ActiveNicName = @()
+  $Script:DisabledNicName = @()
     
-  $Script:ActiveNIC = @{}
-
   $Messages = @{
-  Fix = 'Fix Action: Right click on the network adapter and select "Enable".'
+    Fix = 'Fix Action: Right click on the network adapter and select "Enable".'
   }
 
-  #$InputObject = $InputObject.Ethernet
-
-  <#
-      Dealing with the disabled status.
-      A good first part since no testing will have to happen.
-      It becomes even easier if all of the NICs are disable, because it can just be an output to say they are disabled.
-  #>
-
-  foreach($key in $InputObject.Keys)
+  foreach($key in $NICinfo.Keys)
   {
-  $CurrentNIC = $InputObject.$key
-    Switch ($CurrentNIC.AdminStatus){
+    if($VerbosePreference -eq 'Continue')
+    {
+      Write-Output -InputObject ('{0} - {1}/{2}' -f $key, $NICinfo.$key.AdminStatus, $NICinfo.$key.MediaConnectionState)
+      #Write-Host -Object ('{0} is Up' -f $CurrentNIC.Name) 
+    }
+
+    Switch ($NICinfo.$key.AdminStatus){
       Up 
       {
-        if($VerbosePreference -eq 'Continue')
+        $SentStart = $NICinfo.$key.Statistics.SentBytes
+
+        if($NICinfo.$key.MediaConnectionState -eq 'Connected')
         {
-          Write-Output -InputObject ('{0} - {1}' -f $($key), $($CurrentNIC.AdminStatus))
-          #Write-Host -Object ('{0} is Up' -f $CurrentNIC.Name) 
+          if($SentStart -gt 0)
+          {
+            $NICinfo.$key.ActiveNIC               = $true
+          }
+        }
+        elseif ($NICinfo.$key.MediaConnectionState -ne 'Connected')
+        {
+          if($SentStart -gt 0)
+          {
+            $NICinfo.$key.ActiveNIC               = $true
+          } # if not connected
         }
 
-        if($CurrentNIC.MediaConnectionState  -eq 'Connected')
+        if($NICinfo.$key.ActiveNIC -eq $true)
         {
-          $ActiveNIC.NICConnectionState      = $CurrentNIC.MediaConnectionState
-          $ActiveNIC.NICDNSHostName          = $CurrentNIC.Config.DNSHostName
-          $ActiveNIC.NICIPAddress            = $CurrentNIC.Config.IPAddress[0]
-          $ActiveNIC.NICDefaultIPGateway     = $CurrentNIC.Config.DefaultIPGateway[0]
-          $ActiveNIC.NICDNSServerSearchOrder = $CurrentNIC.Config.DNSServerSearchOrder
-          $ActiveNIC.NICIPSubnet             = $CurrentNIC.Config.IPSubnet[0]
-          $ActiveNIC.NICDescription          = $CurrentNIC.Config.Description
-          $ActiveNIC.NICMACAddress           = $CurrentNIC.Config.MACAddress
-          $ActiveNIC.ActiveNIC               = $true
-          
-          if($CurrentNIC.Config.DHCPEnabled) 
-          {
-            $ActiveNIC.NICDHCPServer         = $CurrentNIC.Config.DHCPServer
-          }
-          Else
-          {
-            $ActiveNIC.NICDHCPServer         = 'False'
-          }
-        } # if connected
-        else
-        {
-          $CurrentNIC.ConnectionState = 'Not Connected'
-          $ActiveNIC.ActiveNIC               = $false
-        } # if not connected
+          $ActiveNicName += $NICinfo.$key.Name
+        }
+        # $ActiveNicName 
       }
       
       Down 
       {
         if($VerbosePreference -eq 'Continue')
         {
-          Write-Output -InputObject ('{0} - {1}' -f $($key), $($CurrentNIC.AdminStatus))
+          Write-Output -InputObject ('{0} - {1}' -f $($key), $($NICinfo.$key.AdminStatus))
           ('{0}' -f $Messages.Fix) | Write-Output
         }
-        $Disabled  += $key
-        $NicOutputData.$key = @{
-          'Name' = $key
-        }
-        $NicOutputData.$key.AdminStatus = $CurrentNIC.AdminStatus
+        $DisabledNicName += $NICinfo.$key.Name
         
-        if($Disabled.count -eq $CurrentNIC.Count)
+        if($DisabledNicName.count -eq $NICinfo.$key.Count)
         {
           Write-Output -InputObject 'All Network devices are Disabled.  In the network settings right Click on the NIC and select Enable.'
-          Return $NicOutputData
+          $DisabledNicName
         }
-      
-        #Write-Output -InputObject ('{0} is Disabled.  In the network settings right Click on the NIC and select Enable .' -f $NIC.Name)
       }
 
     } # End Switch
-  } # EndIf
-
-<#  $ActiveNIC.NICConnectionState 
-  $ActiveNIC.NICDNSHostName         
-  $ActiveNIC.NICIPAddress           
-  $ActiveNIC.NICDefaultIPGateway     
-  $ActiveNIC.NICDNSServerSearchOrder 
-  $ActiveNIC.NICIPSubnet             
-  $ActiveNIC.NICDescription         
-  $ActiveNIC.NICMACAddress  
-  $ActiveNIC.NICDHCPServer #>
+  } # End Foreach key
 }
 
+Select-NetworkAdapter
 
-$t = (Select-NetworkAdapter -InputObject $NICinfo -Verbose)
 
 
