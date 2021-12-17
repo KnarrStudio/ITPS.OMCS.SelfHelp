@@ -1,15 +1,17 @@
 ﻿#!/usr/bin/env powershell
 #requires -Version 2.0 -Modules Microsoft.PowerShell.Utility
 
-Write-Host -Object 'ITPS.OMCS.Tools.psd1'
+# Set-Location C:\Users\erika\Documents\GitHub\ITPS.OMCS.SelfHelp\RepoTools
+
+Write-Host -Object 'ITPS.OMCS.SelfHelp.psd1'
 
 
 $ModulePath = '{0}\{1}.psd1' -f $((Get-Item -Path (Get-Location).Path).Parent.FullName), $((Get-Item -Path (Get-Location).Path).Parent.Name)
 
-$Major = 2     # Changes that cause the code to operate differently or large rewrites
+$Major = 3     # Changes that cause the code to operate differently or large rewrites
 $minor = 1    # When an individual module or function is added
-$Patch = 1     # Small updates to a function or module.  Note: This goes to zero when minor is updated
-$Manifest = 13  # For each manifest module update
+$Patch = 3     # Small updates to a function or module.  Note: This goes to zero when minor is updated
+$Manifest = 14  # For each manifest module update
 
 $SplatSettings = @{
   Path              = $ModulePath
