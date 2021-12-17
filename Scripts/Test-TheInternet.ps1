@@ -512,5 +512,3 @@ function Test-TheInternet
     Start-Process -FilePath notepad -ArgumentList $NetworkReportFullName
   } 
 } #End: function Test-TheInternet
-
-Test-TheInternet
