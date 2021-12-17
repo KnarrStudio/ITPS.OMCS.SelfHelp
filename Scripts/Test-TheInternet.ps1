@@ -1,9 +1,9 @@
 ﻿#requires -Version 3.0 -Modules Microsoft.PowerShell.Utility, NetTCPIP
-  function Test-TheInternet
+function Test-TheInternet
 {
   <#PSScriptInfo
 
-      .VERSION 3.0.1
+      .VERSION 3.1.2
 
       .GUID ace3cc09-e726-4f25-9617-ea3d1f52aaba
 
@@ -86,8 +86,191 @@
 
   #>
 
+  param
+  (
+    [Parameter(Position = 0)]
+    [string]$OutputPath = "$env:TEMP"
+  )
+
   BEGIN{
     $TextColorWarning = 'Yellow'
+    
+    $userName = $env:USERNAME
+    $DateStamp = Get-Date -Format yyMMddTHHmmss
+    $NetworkReportName = ('{0}-{1}.txt' -f $userName, $DateStamp)
+    $NetworkReportFullName = ('{0}\{1}' -f $OutputPath, $NetworkReportName)
+    $Null = New-Item -Path $NetworkReportFullName -ItemType File
+    $TempFile = New-TemporaryFile 
+    $Delimeter = ':'
+    $Formatting = '{0,-23}{1,-2}{2,-24}'
+    $Script:NICinfo = [Ordered]@{
+      DNSHostName          = 'Not Available'
+      IPAddress            = 'Not Available'
+      DefaultIPGateway     = 'Not Available'
+      DNSServerSearchOrder = 'Not Available'
+      DHCPServer           = 'Not Available'
+      IPSubnet             = 'Not Available'
+      Description          = 'Not Available'
+      MACAddress           = 'Not Available'
+      ExternalIp           = 'Not Available'
+    }
+
+    function Script:Get-PhysicalNICInformation
+    {
+      <#
+          .SYNOPSIS
+          Captures information about the NICs from different sources and stores it in $NICinfo
+      #>
+      [CmdletBinding()]
+      param
+      (
+        [Parameter(Mandatory = $false, 
+        Position = 0)]
+        [Switch]$Physical
+      )
+
+      [hashtable]$AdapterInfo = @{}
+   
+      Write-Verbose -Message "Create '`$NICinfo' hashtable" 
+  
+      $PhysicalAdapters = Get-NetAdapter -Physical | Select-Object -Property *
+      Write-Verbose -Message 'Get physical NICs'
+  
+      foreach($PhysAdptr in $PhysicalAdapters)
+      {
+        $AdptrName = $PhysAdptr.Name
+        Write-Verbose -Message ('NIC name: {0}' -f $AdptrName)
+    
+        $AdapterInfo.$AdptrName = @{}
+        Write-Verbose -Message ("Create '`$NICInfo.{0}' hash table" -f $AdptrName)
+    
+        $AdapterInfo.$AdptrName.Name = $AdptrName
+        $AdapterInfo.$AdptrName.AdminStatus = $PhysAdptr.AdminStatus
+        $AdapterInfo.$AdptrName.LinkSpeed = $PhysAdptr.LinkSpeed
+        $AdapterInfo.$AdptrName.InterfaceDescription = $PhysAdptr.InterfaceDescription
+        $AdapterInfo.$AdptrName.MediaConnectionState = $PhysAdptr.MediaConnectionState 
+
+        if($PhysAdptr.AdminStatus -eq 'Up')
+        {
+          try
+          {
+            $AdapterInfo.$AdptrName.Statistics = (Get-NetAdapterStatistics -Name $AdptrName)
+          }
+          catch
+          {
+            $AdapterInfo.$AdptrName.Statistics = 'N/A'
+          }
+        }
+
+        Write-Verbose -Message ('NIC Name: {0}' -f $AdptrName)
+        $ifindex = (Get-NetAdapter -Name $AdptrName).ifIndex
+        Write-Verbose -Message ('Interface Index: {0}' -f $ifindex)
+        $AdapterInfo.$AdptrName.Config = Get-CimInstance -ClassName Win32_NetworkAdapterConfiguration |
+        Where-Object -Property interfaceindex -EQ -Value $ifindex |
+        Select-Object -Property *
+      }
+  
+      <#  foreach($NicName in $PhysicalAdapters.Name)
+          {
+          Write-Verbose -Message ('NIC Name: {0}' -f $NicName) -Verbose
+          $ifindex = (Get-NetAdapter -Name $NicName).ifIndex
+          Write-Verbose -Message ('Interface Index: {0}' -f $ifindex) -Verbose
+          $NICinfo.$NicName.Config = Get-CimInstance -ClassName Win32_NetworkAdapterConfiguration |
+          Where-Object -Property interfaceindex -EQ -Value $ifindex |
+          Select-Object -Property *
+
+      }#>
+
+
+      Return $AdapterInfo
+    } #End: Get-PhysicalNICInformation
+
+    function Script:Select-NetworkAdapter
+    {
+      <#
+          .SYNOPSIS
+          Selects the main NIC to test against.
+      #>
+
+      param
+      (
+        [Parameter(Mandatory = $true,
+            ValueFromPipeline = $true,
+            ValueFromPipelineByPropertyName = $true,
+            #SupportsShouldProcess=$true,
+        Position = 0)]
+        [ValidateNotNull()]
+        [ValidateNotNullOrEmpty()]
+        [Alias('InputData')]
+        [Object]$NICinfo
+      )
+  
+
+      $Script:NicState = @{}
+      $NicState.ActiveNicName = @()
+      $NicState.DisabledNicName = @()
+  
+    
+      $Messages = @{
+        Fix = 'Fix Action: Right click on the network adapter and select "Enable".'
+      }
+
+      foreach($key in $NICinfo.Keys)
+      {
+        if($VerbosePreference -eq 'Continue')
+        {
+          Write-Output -InputObject ('{0} - {1}/{2}' -f $key, $NICinfo.$key.AdminStatus, $NICinfo.$key.MediaConnectionState)
+          #Write-Host -Object ('{0} is Up' -f $CurrentNIC.Name) 
+        }
+
+        Switch ($NICinfo.$key.AdminStatus){
+          Up 
+          {
+            $SentStart = $NICinfo.$key.Statistics.SentBytes
+
+            if($NICinfo.$key.MediaConnectionState -eq 'Connected')
+            {
+              if($SentStart -gt 0)
+              {
+                $NICinfo.$key.ActiveNIC               = $true
+              }
+            }
+            elseif ($NICinfo.$key.MediaConnectionState -ne 'Connected')
+            {
+              if($SentStart -gt 0)
+              {
+                $NICinfo.$key.ActiveNIC               = $true
+              } # if not connected
+            }
+
+            if($NICinfo.$key.ActiveNIC -eq $true)
+            {
+              $NicState.ActiveNicName += $NICinfo.$key.Name
+            }
+            # $ActiveNicName 
+          }
+      
+          Down 
+          {
+            if($VerbosePreference -eq 'Continue')
+            {
+              Write-Output -InputObject ('{0} - {1}' -f $($key), $($NICinfo.$key.AdminStatus))
+              ('{0}' -f $Messages.Fix) | Write-Output
+            }
+            $NicState.DisabledNicName += $NICinfo.$key.Name
+        
+            if($NicState.DisabledNicName.count -eq $NICinfo.$key.Count)
+            {
+              Write-Output -InputObject 'All Network devices are Disabled.  In the network settings right Click on the NIC and select Enable.'
+              #$DisabledNicName
+            }
+          }
+
+        } # End Switch
+      } # End Foreach key
+      Return $NicState
+    } #End: Select-NetworkAdapter
+
     function Script:Test-NetworkConnection
     {
       <#
@@ -104,28 +287,36 @@
           IP Address of the system that needs to be tested.
         
           .EXAMPLE
-          Test-NetworkConnection -TestName 'My Gateway' -TargetNameIp 192.168.0.1
-          This will ping the 192.168.0.1 address and lable it 'My Gateway'
+          Test-NetworkConnection -TestName 'My Gateway' -TargetNameIp 192.168.0.1 -NetworkReportFullName test.txt
+          This will ping the 192.168.0.1 address and lable it 'My Gateway' and send the results to the file test.txt
         
       #>
-      
       
       param
       (
         [Parameter(Position = 0)]
         [string]$TestName = 'Loopback connection',
         [Parameter(Position = 1)]
-        [string[]]$TargetNameIp = '127.0.0.1'
+        [AllowNull()]
+        [AllowEmptyCollection()]
+        [AllowEmptyString()]
+        [string[]]$TargetNameIp = '127.0.0.1',
+        [Parameter(Mandatory = $false)]
+        [Alias('NetworkReportFullName')]
+        [String]$OutputFile
       )
       $Delimeter = ':'
       $Formatting = '{0,-23}{1,-2}{2,-24}'
+
       Write-Verbose -Message $([String]$TargetNameIp)
-      try
-      {
-        Write-Host -Object ('Testing {0}:' -f $TestName) -ForegroundColor Yellow
-        ForEach($Target in $TargetNameIp) 
-        { 
-          Write-Verbose -Message $Target 
+      Write-Host -Object ('Testing {0}:' -f $TestName) -ForegroundColor Yellow
+      Add-Content -Value ('Testing {0}:' -f $TestName) -Path $OutputFile
+    
+      ForEach($Target in $TargetNameIp) 
+      { 
+        try
+        {
+          Write-Verbose -Message ([IpAddress]$Target).IPAddressToString -ErrorAction Stop
           $PingSucceeded = (Test-NetConnection -ComputerName $Target).PingSucceeded
           if($PingSucceeded -eq $true)
           {
@@ -135,15 +326,31 @@
           {
             $TestResults = 'Failed'
           }
-          Tee-Object -InputObject ($Formatting -f $Target, $Delimeter, $TestResults) -FilePath $NetworkReportFullName -Append
-          Write-Verbose ($Formatting -f $TestName, $Delimeter, $TestResults) 
+        }
+        Catch
+        {
+          if(($Target -eq $Null) -or ($Target -eq ''))
+          {
+            $TestResults = 'Null or Blank IPAddress'
+          }
+          else
+          {
+            $TestResults = 'Invalid IPAddress'
+          }
+          Write-Verbose -Message ($Formatting -f $Target, $Delimeter, $TestResults) 
+        }
+        if($OutputFile)
+        {
+          Write-Info -Title $Target -Value $TestResults -FilePath $OutputFile
+          #Tee-Object -InputObject ($Formatting -f $Target, $Delimeter, $TestResults) -FilePath $OutputFile -Append
+        }
+        else
+        {
+          Write-Output -InputObject ($Formatting -f $Target, $Delimeter, $TestResults)
         }
       }
-      Catch
-      {
-        Write-Output -InputObject ('{0} Failed' -f $TestName)
-      }
-    }
+    } #End: Test-NetworkConnection
+    
     function Script:Get-WebFacingIPAddress
     {
       <#
@@ -164,146 +371,146 @@
           Looks at the URL for the IP address that is being presented, then compares it against your local machine. 
         
       #>
-      
-      
-      param
-      (
-        [Parameter(Position = 0)]
-        [String]$URL = 'http://checkip.dyndns.org/',
-        [Parameter(Mandatory,HelpMessage = 'Add Local active IPAddress. "ipconfig/ifconfig"',Position = 1)]
-        [String]$IpAddress
-      )
+
+      [String]$URL = 'http://checkip.dyndns.org/'
       $Delimeter = ':'
       $Formatting = '{0,-23}{1,-2}{2,-24}'
-      $PrivateArray = @('192.', '10.', '127.')
-      $PrivateIp = ($PrivateArray | ForEach-Object -Process {
-          if($IpAddress.Contains($_))
-          {
-            $true
-          }
-      })
-      Write-Verbose -Message ('Ip Address {0}' -f $IpAddress)
-      if($PrivateIp)
+
+      try
       {
-        $HtmlData = (Invoke-RestMethod -Uri $URL).html.body
-        $HtmlString = [string]$HtmlData.Replace(' ','')
-        $ExternalIp = ($HtmlString.Split(':'))[1]
+        $HtmlData = (Invoke-RestMethod -Uri $URL -ErrorAction Stop).html.body
+        $ExternalIp = [string]$HtmlData.Split(':')[1].trim()
       }
-      else
+      catch
       {
-        $ExternalIp = $IpAddress
+        $ExternalIp = 'Not Available'
       }
-      $NICinfo.ExternalIp = $ExternalIp
       Write-Verbose -Message ('This is the IP address you are presenting to the internet')
-      Write-Output -InputObject ($Formatting -f 'External IP', $Delimeter, $ExternalIp)
-    }
-    function Script:Get-NICinformation
+      Write-Verbose -Message $ExternalIp
+      
+      Return [String]$ExternalIp
+    } #End: Get-WebFacingIPAddress
+
+    function Script:Write-Info 
     {
       <#
           .SYNOPSIS
-          Returns information about the local active NIC.
+          Output function
+
+          .INPUTS
+          Filename, title of data and data
+
+          .OUTPUTS
+          Formatted input information to the screen and file
       #>
-      
-      
-      param
-      (
-        [Parameter(Position = 0)]
-        [String]
-        $Workstation = $env:COMPUTERNAME
+
+      [CmdletBinding()]
+      param(
+        [Parameter(Mandatory=$true)][string]$Title,
+        [Parameter(Mandatory=$true)][Object]$Value,
+        [Parameter(Mandatory=$true)][String]$FilePath
       )
-      #$NicServiceName = (Get-NetAdapter -physical -| where status -eq 'up') 
-      $NicServiceName = (Get-WmiObject -Class win32_networkadapter -Filter 'netconnectionstatus = 2' | Where-Object -FilterScript {
-          $_.Description -notmatch 'virtual'  
-      }).ServiceName  #select -Property *
-      #    $AllNetworkAdaptors = Get-WmiObject -Class Win32_NetworkAdapterConfiguration | where ServiceName -eq $NicServiceName | Select-Object -Property *  #IPEnabled=TRUE -ComputerName $Workstation -ErrorAction Stop | Select-Object -Property * -ExcludeProperty IPX*, WINS*
-      $NIC = Get-WmiObject -Class Win32_NetworkAdapterConfiguration |
-      Where-Object -Property ServiceName -EQ -Value $NicServiceName |
-      Select-Object -Property *  #IPEnabled=TRUE -ComputerName $Workstation -ErrorAction Stop | Select-Object -Property * -ExcludeProperty IPX*, WINS*
-      #$AllNetworkAdaptors = Get-WmiObject -Class Win32_NetworkAdapterConfiguration -Filter IPEnabled=TRUE -ComputerName $Workstation -ErrorAction Stop | Select-Object -Property * -ExcludeProperty IPX*, WINS*
-      #$AllNetworkAdaptors = Get-NetAdapter | select -Property * | Where-Object {(($_.Status -EQ 'Up' ) -and ($_.ComponentID -match 'PCI'))} 
-      #    foreach($NIC in $AllNetworkAdaptors)
-      #   {
-      #      if($NIC.ServiceName -eq $NicServiceName) 
-      #      {
-      $NICinfo.DNSHostName          = $NIC.DNSHostName
-      $NICinfo.IPAddress            = $NIC.IPAddress[0]
-      $NICinfo.DefaultIPGateway     = $NIC.DefaultIPGateway[0]
-      $NICinfo.DNSServerSearchOrder = $NIC.DNSServerSearchOrder
-      $NICinfo.IPSubnet             = $NIC.IPSubnet[0]
-      $NICinfo.Description          = $NIC.Description
-      $NICinfo.MACAddress           = $NIC.MACAddress
-      if($NIC.DHCPEnabled) 
-      {
-        $NICinfo.DHCPServer         = $NIC.DHCPServer
-      }
-      Else
-      {
-        $NICinfo.DHCPServer         = 'False'
-      }
-      #      }
-      #    }
-    }
+
+      $Delimeter = ':'
+      $Formatting = '{0,-23}{1,-2}{2,-24}'
     
-    $userName = $env:USERNAME
-    $DateStamp = Get-Date -Format yyMMddTHHmmss
-    $NetworkReportPath = "$env:TEMP"
-    $NetworkReportName = ('{0}-{1}.txt' -f $userName, $DateStamp)
-    $NetworkReportFullName = ('{0}\{1}' -f $NetworkReportPath, $NetworkReportName)
-    $Null = New-Item -Path $NetworkReportFullName -ItemType File
-    $TempFile = New-TemporaryFile 
-    $Delimeter = ':'
-    $Formatting = '{0,-23}{1,-2}{2,-24}'
-    $Script:NICinfo = [Ordered]@{
-      DNSHostName          = ''
-      IPAddress            = ''
-      DefaultIPGateway     = ''
-      DNSServerSearchOrder = ''
-      DHCPServer           = ''
-      IPSubnet             = ''
-      Description          = ''
-      MACAddress           = ''
-      ExternalIp           = ''
-    }
-  } 
+      Tee-Object -InputObject ($Formatting -f $Title, $Delimeter, $Value) -FilePath $FilePath  -Append
+    } #End: Write-Info 
+
+  }
+
   PROCESS{
-    Write-Host -Object ("Gathering the information on your NIC's") -ForegroundColor $TextColorWarning
-    Get-NICinformation
-    Tee-Object -InputObject ($Formatting -f 'DNSHostName', $Delimeter, $NICinfo.DNSHostName) -FilePath $NetworkReportFullName -Append
-    Tee-Object -InputObject ($Formatting -f 'IPAddress', $Delimeter, $NICinfo.IPAddress) -FilePath $NetworkReportFullName -Append
-    Tee-Object -InputObject ($Formatting -f 'DefaultIPGateway', $Delimeter, $NICinfo.DefaultIPGateway) -FilePath $NetworkReportFullName -Append
-    Tee-Object -InputObject ($Formatting -f 'DNSServerSearchOrder', $Delimeter, $(([string]$NICinfo.DNSServerSearchOrder).Replace(' ', ', '))) -FilePath $NetworkReportFullName -Append
-    Tee-Object -InputObject ($Formatting -f 'DHCPEnabled', $Delimeter, $NICinfo.DHCPServer) -FilePath $NetworkReportFullName -Append
-    Tee-Object -InputObject ($Formatting -f 'IPSubnet', $Delimeter, $NICinfo.IPSubnet) -FilePath $NetworkReportFullName -Append
-    Tee-Object -InputObject ($Formatting -f 'Description of NIC', $Delimeter, $NICinfo.Description) -FilePath $NetworkReportFullName -Append
-    Tee-Object -InputObject ($Formatting -f 'MACAddress', $Delimeter, $NICinfo.MACAddress) -FilePath $NetworkReportFullName -Append
+    Write-Host -Object ('Gathering the information on your NICs') -ForegroundColor $TextColorWarning
+    
+    $PhysicalNICs = Get-PhysicalNICInformation
+    $ActiveNicName = [String](Select-NetworkAdapter -InputData $PhysicalNICs ).ActiveNicName
+    
+    if($PhysicalNICs.$ActiveNicName.Config.DNSHostName)
+    {
+      $NICinfo.DNSHostName          = $PhysicalNICs.$ActiveNicName.Config.DNSHostName
+    }
+    if($PhysicalNICs.$ActiveNicName.Config.IPAddress[0])
+    {
+      $NICinfo.IPAddress            = $PhysicalNICs.$ActiveNicName.Config.IPAddress[0]
+    }
+    if($PhysicalNICs.$ActiveNicName.Config.DefaultIPGateway)
+    {
+      $NICinfo.DefaultIPGateway     = $PhysicalNICs.$ActiveNicName.Config.DefaultIPGateway[0]
+    }
+    if($PhysicalNICs.$ActiveNicName.Config.DNSServerSearchOrder)
+    {
+      $NICinfo.DNSServerSearchOrder = $PhysicalNICs.$ActiveNicName.Config.DNSServerSearchOrder
+    }
+    if($PhysicalNICs.$ActiveNicName.Config.IPSubnet[0])
+    {
+      $NICinfo.IPSubnet             = $PhysicalNICs.$ActiveNicName.Config.IPSubnet[0]
+    }
+    if($PhysicalNICs.$ActiveNicName.Config.Description)
+    {
+      $NICinfo.Description          = $PhysicalNICs.$ActiveNicName.Config.Description
+    }
+    if($PhysicalNICs.$ActiveNicName.Config.MACAddress)
+    {
+      $NICinfo.MACAddress           = $PhysicalNICs.$ActiveNicName.Config.MACAddress
+    }
+    if($PhysicalNICs.$ActiveNicName.Config.DHCPEnabled) 
+    {
+      $NICinfo.DHCPServer         = $PhysicalNICs.$ActiveNicName.Config.DHCPServer
+    }
+    Else
+    {
+      $NICinfo.DHCPServer         = 'False'
+    }
+
+
+    Write-Host -Object ('Displaying information on the active NIC') -ForegroundColor $TextColorWarning
+    Write-Info -Title 'DNSHostName' -Value $NICinfo.DNSHostName -FilePath $NetworkReportFullName
+    Write-Info -Title 'IPAddress' -Value $NICinfo.IPAddress -FilePath $NetworkReportFullName 
+    Write-Info -Title 'DefaultIPGateway' -Value $NICinfo.DefaultIPGateway -FilePath $NetworkReportFullName 
+    Write-Info -Title 'DNSServerSearchOrder' -Value $(([string]$NICinfo.DNSServerSearchOrder).Replace(' ', ', ')) -FilePath $NetworkReportFullName 
+    Write-Info -Title 'DHCPEnabled' -Value $NICinfo.DHCPServer -FilePath $NetworkReportFullName 
+    Write-Info -Title 'IPSubnet' -Value $NICinfo.IPSubnet -FilePath $NetworkReportFullName
+    Write-Info -Title 'Description of NIC' -Value $NICinfo.Description -FilePath $NetworkReportFullName 
+    Write-Info -Title 'MACAddress' -Value $NICinfo.MACAddress -FilePath $NetworkReportFullName 
+    
+    Write-Host -Object ('Finding the Web facing IP Address') -ForegroundColor $TextColorWarning
+    $NICinfo.ExternalIp = Get-WebFacingIPAddress
+    Write-Info -Title 'External IP' -Value $NICinfo.ExternalIp -FilePath $NetworkReportFullName
+
     Write-Host -Object ('Checking for an Authentication Server') -ForegroundColor $TextColorWarning
     try
     {
       # Check if computer is connected to domain network
       [void]::([System.DirectoryServices.ActiveDirectory.Domain]::GetComputerDomain())
-      Write-Output -InputObject ($Formatting -f 'Authentication Server', $Delimeter, $env:LOGONSERVER)
+      Write-Info -Title 'Authentication Server' -Value $env:LOGONSERVER -FilePath $NetworkReportFullName
     }
     catch
     {
-      Write-Output -InputObject ($Formatting -f 'Authentication Server', $Delimeter, 'Not Available')
+      #Write-Output -InputObject ($Formatting -f 'Authentication Server', $Delimeter, 'Not Available')
+      Write-Info -Title 'Authentication Server'-Value 'Not Available' -FilePath $NetworkReportFullName
     }
-    Write-Host -Object ('Finding the Web facing IP Address') -ForegroundColor $TextColorWarning
-    Get-WebFacingIPAddress -IpAddress $($NICinfo.IPAddress)
-    Test-NetworkConnection
-    Test-NetworkConnection -TestName 'IPAddress' -TargetNameIp $NICinfo['IPAddress'] 
-    Test-NetworkConnection -TestName 'DefaultIPGateway' -TargetNameIp $NICinfo['DefaultIPGateway'] 
-    Test-NetworkConnection -TestName 'DNSServerSearchOrder' -TargetNameIp $($NICinfo.DNSServerSearchOrder) 
+
+
+    Write-Info -Title "`n`n" -value '---------- Testing ---------- :' -FilePath $NetworkReportFullName
+
+    Test-NetworkConnection -NetworkReportFullName $NetworkReportFullName
+    Test-NetworkConnection -TestName 'IPAddress' -TargetNameIp $NICinfo['IPAddress'] -NetworkReportFullName $NetworkReportFullName 
+    Test-NetworkConnection -TestName 'DefaultIPGateway' -TargetNameIp $NICinfo['DefaultIPGateway'] -NetworkReportFullName $NetworkReportFullName 
+    Test-NetworkConnection -TestName 'DNSServerSearchOrder' -TargetNameIp $($NICinfo.DNSServerSearchOrder) -NetworkReportFullName $NetworkReportFullName 
     if($NICinfo.DHCPServer -ne 'False')
     {
-      Test-NetworkConnection -TestName 'DHCPServer' -TargetNameIp $NICinfo.DHCPServer
+      Test-NetworkConnection -TestName 'DHCPServer' -TargetNameIp $NICinfo.DHCPServer -NetworkReportFullName $NetworkReportFullName
     }
-    Test-NetworkConnection -TestName 'ExternalIp' -TargetNameIp $NICinfo['ExternalIp'] 
+    Test-NetworkConnection -TestName 'ExternalIp' -TargetNameIp $NICinfo['ExternalIp'] -NetworkReportFullName $NetworkReportFullName 
   }
+
   END{
     #$NICinfo | Out-File -FilePath $NetworkReportFullName -Append
     #Get-Content -Path $NetworkReportFullName
     Write-Output -InputObject ('Find the report: {0}' -f $NetworkReportFullName)
     ('Find this report: {0}' -f $NetworkReportFullName) |  Out-File -FilePath $NetworkReportFullName -Append
     Start-Process -FilePath notepad -ArgumentList $NetworkReportFullName
-  }
-}
+  } 
+} #End: function Test-TheInternet
+
+Test-TheInternet
