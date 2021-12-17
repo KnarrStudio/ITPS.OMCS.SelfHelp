@@ -12,13 +12,13 @@
 RootModule = '.\loader.psm1'
 
 # Version number of this module.
-ModuleVersion = '3.1.3.14'
+ModuleVersion = '3.1.4.16'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
 
 # ID used to uniquely identify this module
-GUID = '3a3d6446-07e7-4b66-9564-ccc8a0f06f1f'
+GUID = '0a5625a3-f3f7-4ba7-9e90-2a861b70d594'
 
 # Author of this module
 Author = 'Erik'
