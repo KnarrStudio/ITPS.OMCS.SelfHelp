@@ -11,7 +11,6 @@ to this:
     # External dependent modules of this module
     ExternalModuleDependencies = @('NetTCPIP')
 #>
-
 param(
 $ModuleName = 'ITPS.OMCS.SelfHelp',
 $Major = 3,     # Changes that cause the code to operate differently or large rewrites
@@ -21,11 +20,17 @@ $Manifest = 16,  # For each manifest module update
 
 $PSGallery = 'NasPSGallery',
 $ReleaseNotes = 'Big rewrite. Fixed the error handling. Tests for active nic.  Captures all of the NIC information and stores it, instead of just capturing the few bits that were being used.  '
-
 )
 
+function Write-Yellow ($Comment){
 
-Write-Host -Object ('Updating the manifest module for {0}' -f $ModuleName)
+    Write-Host -Object $Comment -ForegroundColor Yellow
+    }
+
+Write-Yellow -Comment ('Updating the manifest module for {0}' -f $ModuleName)
+
+
+Write-Yellow -Comment 'Finding the local Github path'
 
 if(Test-Path -Path $env:USERPROFILE\Documents\GitHub)
 {
@@ -36,6 +41,7 @@ elseif(Test-Path -Path D:/GitHub/KnarrStudio)
   $GitHubLocation = 'd:/GitHub/KnarrStudio'
 }
 
+Write-Yellow -Comment 'Setting location to RepoTools'
 Set-Location -Path $GitHubLocation
 Set-Location ".\$ModuleName\RepoTools"
 $ManifestFilePath = '{0}\{1}.psd1' -f $((Get-Item -Path (Get-Location).Path).Parent.FullName), $((Get-Item -Path (Get-Location).Path).Parent.Name)
@@ -75,22 +81,22 @@ $InstallSplat = @{
 }
 
 
-
+Write-Yellow -Comment 'Setting location to Github directory'
 Set-Location -Path $GitHubLocation
 
 
-#Create New Manifest File
+Write-Yellow -Comment 'Create New Manifest File'
 New-ModuleManifest @ManifestSplat 
 
-#Update Manifest File
+Write-Yellow -Comment 'Update Manifest File'
 Update-ModuleManifest @UpdateSplat
 (Get-Content $ManifestFilePath).Replace("ExternalModuleDependencies = 'NetTCPIP'","ExternalModuleDependencies = @('NetTCPIP')") | Out-File $ManifestFilePath -Force
 
 
-# Publish Module
+Write-Yellow -Comment 'Publish Module'
 #Publish-Module @PublishSplat
 
-# Install Module 
+Write-Yellow -Comment 'Install Module'
 #Install-Module @InstallSplat
 
 
