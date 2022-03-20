@@ -14,15 +14,15 @@ to this:
 
 Set-Location C:\Users\erika\Documents\GitHub\ITPS.OMCS.SelfHelp\RepoTools
 
-Write-Host -Object 'ITPS.OMCS.SelfHelp.psd1'
+Write-Output 'ITPS.OMCS.SelfHelp.psd1'
 
 
 $ModulePath = '{0}\{1}.psd1' -f $((Get-Item -Path (Get-Location).Path).Parent.FullName), $((Get-Item -Path (Get-Location).Path).Parent.Name)
 
 $Major = 3     # Changes that cause the code to operate differently or large rewrites
 $minor = 1    # When an individual module or function is added
-$Patch = 4     # Small updates to a function or module.  Note: This goes to zero when minor is updated
-$Manifest = 16  # For each manifest module update
+$Patch = 5     # Small updates to a function or module.  Note: This goes to zero when minor is updated
+$Manifest = 17  # For each manifest module update
 
 $SplatSettings = @{
   Path              = $ModulePath
@@ -41,7 +41,7 @@ $SplatSettings = @{
 
 $updateSplat = @{
   Path                       = $ModulePath
-  ReleaseNotes               = 'Moved ISE Add On module to the ITPS.OMCS.Tools.  Updated manefest file maker.  Prepped to merge all of the branches.'
+  ReleaseNotes               = 'Repaired the Convert-IPaddresstobinary script.'
   ProjectUri                 = 'https://github.com/KnarrStudio/ITPS.OMCS.SelfHelp'
   ExternalModuleDependencies = @('NetTCPIP')
 }
