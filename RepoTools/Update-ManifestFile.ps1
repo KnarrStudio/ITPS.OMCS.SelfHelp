@@ -22,7 +22,7 @@ $ModulePath = '{0}\{1}.psd1' -f $((Get-Item -Path (Get-Location).Path).Parent.Fu
 $Major = 3     # Changes that cause the code to operate differently or large rewrites
 $minor = 2    # When an individual module or function is added
 $Patch = 0     # Small updates to a function or module.  Note: This goes to zero when minor is updated
-$Manifest = 18  # For each manifest module update
+$Manifest = 25  # For each manifest module update
 
 $SplatSettings = @{
   Path              = $ModulePath
@@ -35,15 +35,15 @@ $SplatSettings = @{
   PowerShellVersion = '3.0'
   FunctionsToExport = @('Convert-IPAddresstoBinary', 'Move-Cursor', 'Test-AuthentationServer', 'Test-TheInternet','Get-OuComputerBelongsTo')
   CmdletsToExport   = '*'
-  RequiredModules   = 'NetTCPIP','ActiveDirectory'
+  RequiredModules   = @('NetTCPIP')
+  ReleaseNotes               = 'Repaired the Convert-IPaddresstobinary script. Added Get-OuComputerBelongsTo function'
+  ProjectUri                 = 'https://github.com/KnarrStudio/ITPS.OMCS.SelfHelp'
 }
 
 
 $updateSplat = @{
   Path                       = $ModulePath
-  ReleaseNotes               = 'Repaired the Convert-IPaddresstobinary script. Added Get-OuComputerBelongsTo function'
-  ProjectUri                 = 'https://github.com/KnarrStudio/ITPS.OMCS.SelfHelp'
-  ExternalModuleDependencies = @('NetTCPIP')
+  ExternalModuleDependencies = 'NetTCPIP'
 }
 
 #Create New Manifest File
