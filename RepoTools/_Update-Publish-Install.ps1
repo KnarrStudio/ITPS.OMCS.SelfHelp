@@ -55,7 +55,8 @@ $ManifestSplat = @{
   ModuleVersion     = '{0}.{1}.{2}.{3}' -f $Major, $minor, $Patch, $Manifest
   Description       = 'Tools that can be used without admin rights'
   PowerShellVersion = '3.0'
-  FunctionsToExport = @('Convert-IPAddresstoBinary', 'Move-Cursor', 'Test-AuthentationServer', 'Test-TheInternet')
+  NestedModules = @('Modules\PrintersModule.psm1', 'Modules\SystemInfoModule.psm1')
+FunctionsToExport = @('Convert-IPAddresstoBinary', 'Move-Cursor', 'Test-AuthentationServer', 'Test-TheInternet')
   CmdletsToExport   = '*'
   RequiredModules   = 'NetTCPIP'
 }
