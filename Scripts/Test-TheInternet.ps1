@@ -1,5 +1,5 @@
 ﻿#requires -Version 3.0 -Modules Microsoft.PowerShell.Utility, NetTCPIP
-function Test-TheInternet
+function Test-TheInternet3
 {
   <#PSScriptInfo
 
@@ -93,6 +93,7 @@ function Test-TheInternet
   )
 
   BEGIN{
+    $NICinfoMsg = 'Not Available'
     $TextColorWarning = 'Yellow'
     
     $userName = $env:USERNAME
@@ -100,19 +101,19 @@ function Test-TheInternet
     $NetworkReportName = ('{0}-{1}.txt' -f $userName, $DateStamp)
     $NetworkReportFullName = ('{0}\{1}' -f $OutputPath, $NetworkReportName)
     $Null = New-Item -Path $NetworkReportFullName -ItemType File
-    $TempFile = New-TemporaryFile 
+    #$TempFile = New-TemporaryFile 
     $Delimeter = ':'
     $Formatting = '{0,-23}{1,-2}{2,-24}'
     $Script:NICinfo = [Ordered]@{
-      DNSHostName          = 'Not Available'
-      IPAddress            = 'Not Available'
-      DefaultIPGateway     = 'Not Available'
-      DNSServerSearchOrder = 'Not Available'
-      DHCPServer           = 'Not Available'
-      IPSubnet             = 'Not Available'
-      Description          = 'Not Available'
-      MACAddress           = 'Not Available'
-      ExternalIp           = 'Not Available'
+      DNSHostName          = $NICinfoMsg
+      IPAddress            = $NICinfoMsg
+      DefaultIPGateway     = $NICinfoMsg
+      DNSServerSearchOrder = $NICinfoMsg
+      DHCPServer           = $NICinfoMsg
+      IPSubnet             = $NICinfoMsg
+      Description          = $NICinfoMsg
+      MACAddress           = $NICinfoMsg
+      ExternalIp           = $NICinfoMsg
     }
 
     function Script:Get-PhysicalNICInformation
@@ -197,7 +198,6 @@ function Test-TheInternet
         [Parameter(Mandatory = $true,
             ValueFromPipeline = $true,
             ValueFromPipelineByPropertyName = $true,
-            #SupportsShouldProcess=$true,
         Position = 0)]
         [ValidateNotNull()]
         [ValidateNotNullOrEmpty()]
@@ -353,43 +353,53 @@ function Test-TheInternet
     
     function Script:Get-WebFacingIPAddress
     {
-      <#
-          .SYNOPSIS
-          Returns the public facing IP address.
+  <#
+      .SYNOPSIS
+      Returns the public facing IP address.
         
-          .DESCRIPTION
-          Add a more complete description of what the function does.
-        
-          .PARAMETER URL
-          in this case it is 'http://checkip.dyndns.org/', but you can use anyone you want such as IPchicken.org
-        
-          .PARAMETER IpAddress
-          The IP address of the local computer.  This is used to compare your address to the one returned.
-        
-          .EXAMPLE
-          Get-WebFacingIPAddress -URL IPchicken.org -IpAddress 192.168.0.123
-          Looks at the URL for the IP address that is being presented, then compares it against your local machine. 
-        
-      #>
+      .DESCRIPTION
+      Uses invoke-WebRequest and Invoke-RestMethod to return your web facing IP Address from one of the following sites:
+      'http://checkip.dyndns.org/'
+      'https://api.ipify.org'
+     
+      .EXAMPLE
+      Get-WebFacingIPAddress
 
-      [String]$URL = 'http://checkip.dyndns.org/'
-      $Delimeter = ':'
-      $Formatting = '{0,-23}{1,-2}{2,-24}'
+      Returns the $ExternalIp variable
 
-      try
-      {
-        $HtmlData = (Invoke-RestMethod -Uri $URL -ErrorAction Stop).html.body
-        $ExternalIp = [string]$HtmlData.Split(':')[1].trim()
-      }
-      catch
-      {
-        $ExternalIp = 'Not Available'
-      }
-      Write-Verbose -Message ('This is the IP address you are presenting to the internet')
-      Write-Verbose -Message $ExternalIp
-      
-      Return [String]$ExternalIp
-    } #End: Get-WebFacingIPAddress
+      .NOTES
+      Removed the parameters and added the websites directly to the code, because the simple call didn't work for every website.
+ 
+  #>
+  [CmdletBinding()]
+  Param()
+  $ExtIpCatchMsg = 'Not Available'
+  $ErrorActionPreference = "Stop"
+try
+  {
+    $HtmlData = (Invoke-RestMethod -Uri 'http://checkip.dyndns.org/').html.body
+    $ExternalIp = [string]$HtmlData.Split(':')[1].trim()
+  }
+  catch
+  {
+    $ExternalIp = $ExtIpCatchMsg
+  }
+  if($ExternalIp -eq $ExtIpCatchMsg)
+  {
+    try
+    {
+      $HtmlData = (Invoke-WebRequest -Uri 'https://api.ipify.org?format=json').Content
+      $ExternalIp = [String]($HtmlData | ConvertFrom-Json).IP
+    }
+    Catch
+    {
+      $ExternalIp = $ExtIpCatchMsg
+    }
+  }
+  Write-Verbose -Message ('This is the IP address you are presenting to the internet')
+    
+  [String]$ExternalIp
+  } #End: Get-WebFacingIPAddress
 
     function Script:Write-Info 
     {
@@ -487,7 +497,7 @@ function Test-TheInternet
     catch
     {
       #Write-Output -InputObject ($Formatting -f 'Authentication Server', $Delimeter, 'Not Available')
-      Write-Info -Title 'Authentication Server'-Value 'Not Available' -FilePath $NetworkReportFullName
+      Write-Info -Title 'Authentication Server'-Value $NICinfoMsg -FilePath $NetworkReportFullName
     }
 
 
