@@ -15,11 +15,11 @@ param(
 $ModuleName = 'ITPS.OMCS.SelfHelp',
 $Major = 3,     # Changes that cause the code to operate differently or large rewrites
 $minor = 1,   # When an individual module or function is added
-$Patch = 4,     # Small updates to a function or module.  Note: This goes to zero when minor is updated
-$Manifest = 16,  # For each manifest module update
+$Patch = 5,     # Small updates to a function or module.  Note: This goes to zero when minor is updated
+$Manifest = 17,  # For each manifest module update
 
 $PSGallery = 'NasPSGallery',
-$ReleaseNotes = 'Big rewrite. Fixed the error handling. Tests for active nic.  Captures all of the NIC information and stores it, instead of just capturing the few bits that were being used.  '
+$ReleaseNotes = 'Small changes to cleanup.  Removed a couple of commented out items.  The bigger change was for the Get-WebFacingIPAddress function which did not handle errors well.  Fixed that with another try/catch and added another webpage to test from.'
 )
 
 function Write-Yellow ($Comment){
