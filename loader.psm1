@@ -12,3 +12,4 @@
 . $PSScriptRoot\Scripts\Move-Cursor.ps1
 . $PSScriptRoot\Scripts\Test-AuthentationServer.ps1
 . $PSScriptRoot\Scripts\Test-TheInternet.ps1
+. $PSScriptRoot\Scripts\Get-OuComputerBelongsTo.ps1
