@@ -1,4 +1,5 @@
-﻿
+﻿#requires -Version 2.0
+
 function Get-OuComputerBelongsTo
 {
   <#
@@ -9,15 +10,14 @@ function Get-OuComputerBelongsTo
   param
   (
     [Parameter(Mandatory = $false, Position = 0)]
-    [System.String]
-    $ComputerName = $env:computername
+    [String]$ComputerName = $env:computername
   )
   
   $Filter = "(&(objectCategory=Computer)(Name=$ComputerName))"
   
   $DirectorySearcher = New-Object -TypeName System.DirectoryServices.DirectorySearcher
   $DirectorySearcher.Filter = $Filter
-  $SearcherPath = $DirectorySearcher.FindOne()
+  $SearcherPath = $DirectorySearcher.FindOne() 
   $DistinguishedName = $SearcherPath.GetDirectoryEntry().DistinguishedName
   
   $OUName = ($DistinguishedName.Split(','))[1]
