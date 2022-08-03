@@ -1,5 +1,5 @@
 ﻿#requires -Version 3.0 -Modules Microsoft.PowerShell.Utility, NetTCPIP
-function Test-TheInternet3
+function Test-TheInternet
 {
   <#PSScriptInfo
 
