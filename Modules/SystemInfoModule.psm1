@@ -154,13 +154,14 @@
   }
 }
 
+
 function Get-SystemUpTime
 {
   <#PSScriptInfo
 
-      .VERSION 1.7
+      .VERSION 2.0
 
-      .GUID 4f5d3d64-7d6e-407e-a902-cdbc1b6175cd
+      .GUID 404420d4-428f-4f43-833b-ecc511f8318c
 
       .AUTHOR Erik
 
@@ -188,7 +189,6 @@ function Get-SystemUpTime
       .PRIVATEDATA
 
   #>
-
   <# 
       .SYNOPSIS
       Returns the last boot time and uptime in hours for one or many computers
@@ -222,43 +222,16 @@ function Get-SystemUpTime
     [Alias('hostname')]
     [string[]]$ComputerName = $env:COMPUTERNAME,
     [Parameter (ParameterSetName = 'DisplayOnly')]
-    [Switch]$ShowOfflineComputers,
-    <# [Parameter (ParameterSetName = 'DisplayOnly')]
-    [Switch]$DisplayOnly,#>
-    [Parameter (ParameterSetName = 'DisplayOnly')]
-    [Switch]$BootOnly,
-    [Parameter (ParameterSetName = 'FileOnly')]
-    [Switch]$FileOnly,
-    [Parameter (ParameterSetName = 'FileOnly')]
-    [String]$OutCsv = "$env:HOMEDRIVE\Temp\UpTime.csv"
+    [Switch]$ShowOfflineComputers
   )
   
   BEGIN {
     $ErroredComputers = @()
-    if($BootOnly)
-    {
-      $SelectObjects = 'ComputerName', 'LastBoot'
-    }
-    else
-    {
-      $SelectObjects = 'ComputerName', 'LastBoot', 'TotalHours'
-    }
-    if($DisplayOnly)
-    {
-      $OutCsv = $null
-    }
-    if($FileOnly)
-    {
-      if (Test-Path -Path $OutCsv)
-      {
-        $i = 1
-        $NewFileName = $OutCsv.Trim('.csv')
-        Do 
-        {
-          $OutCsv = ('{0}({1}).csv' -f $NewFileName, $i)
-          $i++
-        }while (Test-Path -Path $OutCsv)
-      }
+    $Obj = @()
+    $Properties = [PSCustomObject]@{
+      ComputerName = ''
+      LastBoot     = ''
+      TotalHours   = ''
     }
   }
   
@@ -269,13 +242,11 @@ function Get-SystemUpTime
       {
         $OS = Get-WmiObject -Class Win32_OperatingSystem -ComputerName $Computer -ErrorAction Stop
         $UpTime = (Get-Date) - $OS.ConvertToDateTime($OS.LastBootUpTime)
-        $Properties = @{
-          ComputerName = $Computer
-          LastBoot     = $OS.ConvertToDateTime($OS.LastBootUpTime)
-          TotalHours   = ( '{0:n2}' -f $UpTime.TotalHours)
-        }
         
-        $Object = New-Object -TypeName PSObject -Property $Properties | Select-Object -Property $SelectObjects
+        $Properties.ComputerName = $Computer
+        $Properties.LastBoot     = $OS.ConvertToDateTime($OS.LastBootUpTime)
+        $Properties.TotalHours   = ( '{0:n2}' -f $UpTime.TotalHours)
+        $Obj += $Properties
       }
       catch 
       {
@@ -284,30 +255,11 @@ function Get-SystemUpTime
           $ErrorMessage = ('{0} Error: {1}' -f $Computer, $_.Exception.Message)
           $ErroredComputers += $ErrorMessage
           
-          $Properties = @{
-            ComputerName = $Computer
-            LastBoot     = 'Unable to Connect'
-            TotalHours   = 'Error Shown Below'
-          }
-          
-          $Object = New-Object -TypeName PSObject -Property $Properties | Select-Object -Property $SelectObjects
+          $Properties.ComputerName = $Computer
+          $Properties.LastBoot     = 'Unable to Connect'
+          $Properties.TotalHours   = 'Error Shown Below'
+          $Obj += $Properties
         }
-      }
-      finally 
-      {
-        if($FileOnly)
-        {
-          $Object | Export-Csv -Path $OutCsv -Append -NoTypeInformation
-          Write-Verbose -Message ('Output located {0}' -f $OutCsv)
-        }
-        
-        Write-Output -InputObject $Object
-        
-        $Object       = $null
-        $OS           = $null
-        $UpTime       = $null
-        $ErrorMessage = $null
-        $Properties   = $null
       }
     }
   }
@@ -319,5 +271,10 @@ function Get-SystemUpTime
       Write-Output -InputObject 'Errors for Computers not able to connect.'
       Write-Output -InputObject $ErroredComputers
     }
+    else
+    {
+      $Obj
+    }
   }
 }
+
