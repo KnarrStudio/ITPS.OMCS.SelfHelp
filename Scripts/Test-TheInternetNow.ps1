@@ -1,21 +1,23 @@
 ﻿#PSScriptInfo
 <#
-    .VERSION 3.2.1
-    .GUID 7e8e1c7b-4e2b-4c8e-9e2e-123456789abc
-    .AUTHOR Erik
-    .COMPANYNAME KnarrStudio
-    .COPYRIGHT 2021-2024 KnarrStudio
-    .TAGS network, diagnostics, ping, report, dns
-    .LICENSEURI 
-    .PROJECTURI https://github.com/KnarrStudio/ITPS.OMCS.SelfHelp/blob/master/README.md
-    .ICONURI 
-    .EXTERNALMODULEDEPENDENCIES Microsoft.PowerShell.Utility, NetTCPIP
-    .REQUIREDSCRIPTS 
-    .EXTERNALSCRIPTDEPENDENCIES 
-    .RELEASENOTES
-    - Improved DNS resolution output and error handling
-    - Added multi-source external IP detection
-    - Enhanced comments and comment-based help
+.VERSION 3.2.2
+.GUID 7e8e1c7b-4e2b-4c8e-9e2e-123456789abc
+.AUTHOR Erik
+.COMPANYNAME KnarrStudio
+.COPYRIGHT 2021-2024 KnarrStudio
+.TAGS network, diagnostics, ping, report, dns, troubleshooting
+.LICENSEURI 
+.PROJECTURI https://github.com/KnarrStudio/ITPS.OMCS.SelfHelp/blob/master/README.md
+.ICONURI 
+.EXTERNALMODULEDEPENDENCIES Microsoft.PowerShell.Utility, NetTCPIP
+.REQUIREDSCRIPTS 
+.EXTERNALSCRIPTDEPENDENCIES 
+.RELEASENOTES
+- Improved DNS resolution output and error handling
+- Added multi-source external IP detection (checkip.dyndns.org, ipify.org, ipchicken.com, ifconfig.me)
+- Enhanced comments and comment-based help
+- Added robust error handling for all major steps
+- Output formatting improvements for clarity
 #>
 
 <#
