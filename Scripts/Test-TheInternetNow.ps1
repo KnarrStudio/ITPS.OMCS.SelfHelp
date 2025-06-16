@@ -82,7 +82,7 @@ function Test-TheInternetNow
 
   #region Helper Functions
 
-  function Test-DnsResolution 
+   function Test-DnsResolution 
   {
     <#
         .SYNOPSIS
@@ -116,19 +116,19 @@ function Test-TheInternetNow
         Select-Object -ExpandProperty IPAddress
         if ($ipv4s) 
         {
-          $line = $Formatting -f ('DNS ({0}) resolves' -f $dns), $Delimeter, ('{0} to {1}' -f $HostName, ($ipv4s -join ', '))
+          $Hostnameline = $Formatting -f ('DNS ({0}) resolves' -f $dns), $Delimeter, ('{0} to {1}' -f $HostName, ($ipv4s -join ', '))
         }
         else 
         {
-          $line = $Formatting -f ('DNS ({0}) resolves' -f $dns), $Delimeter, ('{0} (no IPv4 found)' -f $HostName)
+          $Hostnameline = $Formatting -f ('DNS ({0}) resolves' -f $dns), $Delimeter, ('{0} (no IPv4 found)' -f $HostName)
         }
       }
       catch 
       {
-        $line = $Formatting -f ('DNS ({0}) resolves' -f $dns), $Delimeter, ('{0} Failed' -f $HostName)
+        $Hostnameline = $Formatting -f ('DNS ({0}) resolves' -f $dns), $Delimeter, ('{0} Failed' -f $HostName)
       }
-      Write-Host $line
-      $line | Tee-Object -FilePath $OutputFile -Append
+      #Write-Host $line
+      $Hostnameline | Tee-Object -FilePath $OutputFile -Append
 
       # IPv4 to Hostname (reverse lookup)
       try 
@@ -141,19 +141,19 @@ function Test-TheInternetNow
         Select-Object -ExpandProperty NameHost -First 1
         if ($nameHost) 
         {
-          $line = $Formatting -f ('DNS ({0}) PTR' -f $dns), $Delimeter, ('{0} to {1}' -f $LocalIp, $nameHost)
+          $IPv4line = $Formatting -f ('DNS ({0}) PTR' -f $dns), $Delimeter, ('{0} to {1}' -f $LocalIp, $nameHost)
         }
         else 
         {
-          $line = $Formatting -f ('DNS ({0}) PTR' -f $dns), $Delimeter, ('{0} (no PTR found)' -f $LocalIp)
+          $IPv4line = $Formatting -f ('DNS ({0}) PTR' -f $dns), $Delimeter, ('{0} (no PTR found)' -f $LocalIp)
         }
       }
       catch 
       {
-        $line = $Formatting -f ('DNS ({0}) PTR' -f $dns), $Delimeter, ('{0} Failed' -f $LocalIp)
+        $IPv4line = $Formatting -f ('DNS ({0}) PTR' -f $dns), $Delimeter, ('{0} Failed' -f $LocalIp)
       }
-      Write-Host $line
-      $line | Tee-Object -FilePath $OutputFile -Append
+      #Write-Host $IPv4line
+      $IPv4line | Tee-Object -FilePath $OutputFile -Append
     }
   }
 
@@ -281,7 +281,7 @@ function Test-TheInternetNow
     $line | Tee-Object -FilePath $FilePath -Append
   }
 
-  function Is-PrivateIp 
+  function Test-PrivateIp 
   {
     <#
         .SYNOPSIS
@@ -307,7 +307,7 @@ function Test-TheInternetNow
 $ExtIpCatchMsg = 'Not Available'
     $ErrorActionPreference = 'Stop'
     # If local IP is public, just return it
-    if ($LocalIp -and -not (Is-PrivateIp -Ip $LocalIp)) 
+    if ($LocalIp -and -not (Test-PrivateIp -Ip $LocalIp)) 
     {
       return $LocalIp
     }
